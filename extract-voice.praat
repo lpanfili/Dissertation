@@ -14,7 +14,7 @@ transcription_tier = 3
 phonation_tier = 4
 
 # Initialize results file
-results_header$ = "gridfile	vowel_start	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda'newline$'"
 
 
 # Check if the results file already exists
@@ -81,16 +81,28 @@ for ifile to numberoffiles
 			phonation_label$ = Get label of interval... phonation_tier phonation_interval
 			
 			# Get jitter
-			jitter = 0
-			procedure Voice_quality
+			procedure Jitter
 				select PointProcess 'soundname$'
 				jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
-				jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_ppq5 = Get jitter (ppq5)... vowel_start vowel_end 0.0001 0.02 1.3
 			endproc
-			call Voice_quality
+			call Jitter
+
+			# Get shimmer
+			procedure Shimmer
+			select Sound 'soundname$'
+			plus PointProcess 'soundname$'
+			shimmer_loc = Get shimmer (local)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			shimmer_loc_dB = Get shimmer (local_dB)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			shimmer_apq3 = Get shimmer (apq3)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			shimmer_apq5 = Get shimmer (apq5)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			shimmer_apq11 = Get shimmer (apq11)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			shimmer_dda = Get shimmer (dda)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+			endproc
+			call Shimmer
+
 
 			# Make blank things NA
 			if word_label$ = ""
@@ -101,7 +113,7 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-			results_line$ = "'gridfile$'	'vowel_start'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'newline$'"
+			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
