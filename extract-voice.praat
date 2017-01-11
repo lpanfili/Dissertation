@@ -14,7 +14,7 @@ transcription_tier = 3
 phonation_tier = 4
 
 # Initialize results file
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	'newline$'"
 
 
 # Check if the results file already exists
@@ -71,7 +71,7 @@ for ifile to numberoffiles
 			vowel_end = Get end point... phone_tier phone_interval
 			vowel_dur = (vowel_end - vowel_start)
 			vowel_midpoint = vowel_start + (vowel_dur / 2)
-			
+
 			# Get word annotation
 			word_interval = Get interval at time... word_tier vowel_midpoint
 			word_label$ = Get label of interval... word_tier word_interval
@@ -85,6 +85,7 @@ for ifile to numberoffiles
 				select PointProcess 'soundname$'
 				jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
+				jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_ppq5 = Get jitter (ppq5)... vowel_start vowel_end 0.0001 0.02 1.3
 			endproc
