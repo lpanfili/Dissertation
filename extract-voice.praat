@@ -14,7 +14,7 @@ transcription_tier = 3
 phonation_tier = 4
 
 # Initialize results file
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	hnr_mean	'newline$'"
 
 
 # Check if the results file already exists
@@ -54,10 +54,12 @@ for ifile to numberoffiles
 	phone_intervals = Get number of intervals... phone_tier
 	Read from file... 'textgrid_directory$''filename$'
 
-	# Create Point Process
+	# Create Pitch, Point Process, and Harmonicity objects
 	select Sound 'soundname$'
 	To Pitch... 0 75 600
 	To PointProcess
+	select Sound 'soundname$'
+	To Harmonicity (cc)... 0.01 75.0 0.1 1.0
 
 	for phone_interval to phone_intervals
 		select 'gridname$'
@@ -104,6 +106,12 @@ for ifile to numberoffiles
 			endproc
 			call Shimmer
 
+			# Get harmonicity
+			procedure Harmonicity
+			select Harmonicity 'soundname$'
+			hnr_mean = Get mean... vowel_start vowel_end
+			endproc
+			call Harmonicity
 
 			# Make blank things NA
 			if word_label$ = ""
@@ -114,7 +122,7 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'newline$'"
+			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'hnr_mean'	'newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
