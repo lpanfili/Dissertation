@@ -14,7 +14,7 @@ transcription_tier = 3
 phonation_tier = 4
 
 # Initialize results file
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	hnr_mean	'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	hnr_mean	f1	f2	'newline$'"
 
 
 # Check if the results file already exists
@@ -60,6 +60,9 @@ for ifile to numberoffiles
 	To PointProcess
 	select Sound 'soundname$'
 	To Harmonicity (cc)... 0.01 75.0 0.1 1.0
+	select Sound 'soundname$'
+	To Formant (burg)... 0.0 5.0 5500.0 0.025 50.0
+	# CHANGE THE ABOVE SETTINGS BY GENDER!
 
 	for phone_interval to phone_intervals
 		select 'gridname$'
@@ -113,6 +116,14 @@ for ifile to numberoffiles
 			endproc
 			call Harmonicity
 
+			# Get F1 and F2
+			procedure Formants
+			select Formant 'soundname$'
+			f1 = Get mean... 1 vowel_start vowel_end Hertz
+			f2 = Get mean... 2 vowel_start vowel_end Hertz
+			endproc
+			call Formants
+
 			# Make blank things NA
 			if word_label$ = ""
 				word_label$ = "NA"
@@ -122,7 +133,7 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'hnr_mean'	'newline$'"
+			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'hnr_mean'	'f1'	'f2'	'newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
