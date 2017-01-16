@@ -1,10 +1,10 @@
 # Form to set directories
 form Directories
 	comment Enter directory with TextGrids:
-	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data2/
+	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data/
 	
 	comment Enter name and location of results file:
-	sentence Results_file /Users/Laura/Desktop/Dissertation/test-data2/results.txt
+	sentence Results_file /Users/Laura/Desktop/Dissertation/test-data/results.txt
 endform
 
 # Set tier numbers
