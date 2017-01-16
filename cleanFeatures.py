@@ -1,6 +1,9 @@
 import csv
 import random
-from sklearn import svm
+from sklearn import svm, metrics
+import matplotlib.pyplot as plt
+import numpy as np
+import itertools
 
 # Make a list from a file of words
 # Use this for the stop words to be excluded
@@ -26,17 +29,64 @@ def remove(filename, results, stopList):
 				if line["phonation"] != "0" and line["phonation"] != "1" and line["word_label"] not in stopWords:
 					writer.writerow(line)
 
+# Picks which of the features to include
+# Replaces "undefined" with "1"
+# Returns a tuple of features, label
 def pickFeatures(line):
 	label = line["phonation"]
 	features = [line["jitter_ddp"], line["jitter_loc"], line["jitter_loc_abs"], line["jitter_rap"], line["jitter_ppq5"], 
 			line["shimmer_loc"], line["shimmer_apq3"], line["shimmer_apq5"], line["shimmer_apq11"], line["shimmer_dda"]]
-	features = [1 if i == "--undefined--" else i for i in features] # list comprehension, convert undefinds to 1
+	features = [1 if i == "--undefined--" else i for i in features]
 	return features, label
 
+# Shuffles tuples of features, label
+# Puts first 80% in training data
+# Puts last 20% in test data
+def splitData(dataPoints):
+	random.shuffle(dataPoints)
+	total = len(dataPoints)
+	cutoff = int(total * .8)
+	train = dataPoints[:cutoff]
+	test = dataPoints[cutoff:]
+	return train, test
 
-def main():
-	filename = "/Users/Laura/Desktop/Dissertation/test-data/results.txt"
-	stopWords = makeList("/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
+# Returns confusion matrix
+def confusionMatrix(testy, predictedy):
+	return metrics.confusion_matrix(testy, predictedy, labels = ["B", "M", "C"])
+
+# Plots confusion matrix
+def plot_confusion_matrix(cm, classes,
+                          normalize = False,
+                          title = "Confusion matrix",
+                          cmap = plt.cm.Blues):
+    plt.imshow(cm, interpolation = 'nearest', cmap = cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color = "white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+# Reads from a file
+# Writes only lines that have B M C as phonation and aren't stopwords
+# Calls pickFeatures to add only specific features to the list
+def getData(filename, stopWords):
 	dataPoints = []
 	phonationLabs = ["B", "C", "M"]
 	with open(filename) as f:
@@ -44,21 +94,9 @@ def main():
 		for line in reader:
 			if line["phonation"] in phonationLabs and line["word_label"] not in stopWords:
 				dataPoints.append(pickFeatures(line))
-	random.shuffle(dataPoints)
-	total = len(dataPoints)
-	cutoff = int(total * .8)
-	train = dataPoints[:cutoff]
-	test = dataPoints[cutoff:]
-	resultsTrain = "/Users/Laura/Desktop/Dissertation/test-data/trainingdata.csv"
-	with open(resultsTrain, "w") as f:
-		writer = csv.writer(f)
-		for i in train:
-			writer.writerow(i)
-	trainx, trainy = zip(*train)
-	testx, testy = zip(*test)
-	clf = svm.SVC()
-	clf.fit(trainx, trainy) 
-	predictedy = clf.predict(testx)
+	return dataPoints
+
+def printAccuracy(testy, predictedy):
 	numCorrect = 0
 	numTotal = 0
 	for i in range(len(predictedy)):
@@ -67,22 +105,20 @@ def main():
 			numCorrect += 1
 	print(numCorrect, " / ", numTotal, " = ", 1.0 * numCorrect/numTotal)
 
-
-	# Open the CSV with raw data
-
-	# For each line in that CSV, process and turn it into x, y pair
-	# then add to list of (x, y) pairs
-
-	# Randomly select 80?% of the pairs to be train data, use rest as test
-	# Split the pairs into separate lists
-
-	# Train machine learning algorithm on the train data
-
-	# Run ML model on the test data and report results
-
-	#remove("/Users/Laura/Desktop/Dissertation/test-data/results.txt", 
-	#"/Users/Laura/Desktop/Dissertation/test-data/results-clean.txt", 
-	#"/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
+def main():
+	stopWords = makeList("/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
+	dataPoints = getData("/Users/Laura/Desktop/Dissertation/test-data/results.txt", stopWords)
+	train, test = splitData(dataPoints)
+	trainx, trainy = zip(*train)
+	testx, testy = zip(*test)
+	clf = svm.SVC()
+	clf.fit(trainx, trainy) 
+	predictedy = clf.predict(testx)
+	printAccuracy(testy, predictedy)
+	cnf_matrix = confusionMatrix(testy, predictedy)
+	plt.figure()
+	plot_confusion_matrix(cnf_matrix, classes = ["B", "M", "C"], title = 'Confusion Matrix')
+	plt.show()
 
 if __name__ == "__main__":
 	main()
