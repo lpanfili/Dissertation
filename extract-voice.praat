@@ -1,10 +1,10 @@
 # Form to set directories
 form Directories
 	comment Enter directory with TextGrids:
-	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data/
+	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data2/
 	
 	comment Enter name and location of results file:
-	sentence Results_file /Users/Laura/Desktop/Dissertation/test-data/results.txt
+	sentence Results_file /Users/Laura/Desktop/Dissertation/test-data2/results.txt
 endform
 
 # Set tier numbers
@@ -57,7 +57,9 @@ for ifile to numberoffiles
 	# Create Pitch, Point Process, and Harmonicity objects
 	select Sound 'soundname$'
 	To Pitch... 0 75 600
-	To PointProcess
+	select Sound 'soundname$'
+	plus Pitch 'soundname$'
+	To PointProcess (cc)
 	select Sound 'soundname$'
 	To Harmonicity (cc)... 0.01 75.0 0.1 1.0
 	select Sound 'soundname$'
@@ -87,7 +89,7 @@ for ifile to numberoffiles
 			
 			# Get jitter
 			procedure Jitter
-				select PointProcess 'soundname$'
+				select PointProcess 'soundname$'_'soundname$'
 				jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
 				jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
@@ -99,7 +101,7 @@ for ifile to numberoffiles
 			# Get shimmer
 			procedure Shimmer
 			select Sound 'soundname$'
-			plus PointProcess 'soundname$'
+			plus PointProcess 'soundname$'_'soundname$'
 			shimmer_loc = Get shimmer (local)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
 			shimmer_loc_dB = Get shimmer (local_dB)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
 			shimmer_apq3 = Get shimmer (apq3)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
