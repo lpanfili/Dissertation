@@ -1,22 +1,39 @@
 # Form to set directories
 form Directories
 	comment Enter directory with TextGrids:
-	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data/
+	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data2
 	
 	comment Enter name and location of results file:
-	sentence Results_file /Users/Laura/Desktop/Dissertation/test-data/results.txt
+	sentence Results_name results.txt
 endform
 
-# Set tier numbers
-phone_tier = 1
-word_tier = 2
-transcription_tier = 3
-phonation_tier = 4
+clearinfo
 
+#-------------------------------------------------------------------------#
+# create full path for results file
+# first ensure that path has final slash; add it if it doesn't
+   if right$(textgrid_directory$) = "\" or right$(textgrid_directory$) = "/"
+	# nothing
+   else
+	# add path division
+	textgrid_directory$ = "'textgrid_directory$'/"
+   endif
+
+results_file$ = "'textgrid_directory$'" + "'results_name$'" 
+print find results at 'results_file$''newline$'
+
+
+#-------------------------------------------------------------------------#
+# set all default arguments for functions (procedure at bottom of script)
+   call set_parameters
+
+#-------------------------------------------------------------------------#
 # Initialize results file
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	jitter_ddp	jitter_loc	jitter_loc_abs	jitter_rap	jitter_ppq5	shimmer_loc	shimmer_local_dB	shimmer_apq3	shimmer_apq5	shimmer_apq11	shimmer_dda	hnr_mean	f1	f2	'newline$'"
+#results_header$ = "gridfile'tab$'vowel_start'tab$'vowel_end'tab$'vowel_dur'tab$'vowel_label'tab$'word_label'tab$'phonation'tab$'jitter_ddp'tab$'jitter_loc'tab$'jitter_loc_abs'tab$'jitter_rap'tab$'jitter_ppq5'tab$'shimmer_loc'tab$'shimmer_local_dB'tab$'shimmer_apq3'tab$'shimmer_apq5'tab$'shimmer_apq11'tab$'shimmer_dda'tab$'hnr_mean'tab$'f1'tab$'f2'newline$'"
 
+results_header$ = "gridfile,vowel_start,vowel_end,vowel_dur,vowel_label,word_label,phonation,jitter_ddp,jitter_loc,jitter_loc_abs,jitter_rap,jitter_ppq5,shimmer_loc,shimmer_local_dB,shimmer_apq3,shimmer_apq5,shimmer_apq11,shimmer_dda,hnr_mean,f1,f2,F0'newline$'"
 
+#-------------------------------------------------------------------------#
 # Check if the results file already exists
 if fileReadable (results_file$)
 	beginPause ("Warning")
@@ -36,8 +53,9 @@ numberoffiles = Get number of strings
 
 # Print initial report
 initial_report$ = "Beginning analysis of 'numberoffiles' TextGrids..."
-echo 'initial_report$'
+print 'initial_report$'
 
+#-------------------------------------------------------------------------#
 # Go through each file
 for ifile to numberoffiles
 	select Strings gridlist
@@ -56,15 +74,14 @@ for ifile to numberoffiles
 
 	# Create Pitch, Point Process, and Harmonicity objects
 	select Sound 'soundname$'
-	To Pitch... 0 75 600
+	To Pitch... 0 minpitch maxpitch
 	select Sound 'soundname$'
 	plus Pitch 'soundname$'
 	To PointProcess (cc)
 	select Sound 'soundname$'
-	To Harmonicity (cc)... 0.01 75.0 0.1 1.0
+	To Harmonicity (cc)... harmonicity_timestep minpitch silence_thresh periods_per_window
 	select Sound 'soundname$'
-	To Formant (burg)... 0.0 5.0 5500.0 0.025 50.0
-	# CHANGE THE ABOVE SETTINGS BY GENDER!
+	To Formant (burg)... 0.0 numformants maxformant 0.025 50.0
 
 	for phone_interval to phone_intervals
 		select 'gridname$'
@@ -88,43 +105,19 @@ for ifile to numberoffiles
 			phonation_label$ = Get label of interval... phonation_tier phonation_interval
 			
 			# Get jitter
-			procedure Jitter
-				select PointProcess 'soundname$'_'soundname$'
-				jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
-				jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
-				jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
-				jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3
-				jitter_ppq5 = Get jitter (ppq5)... vowel_start vowel_end 0.0001 0.02 1.3
-			endproc
-			call Jitter
+			   call Jitter
 
 			# Get shimmer
-			procedure Shimmer
-			select Sound 'soundname$'
-			plus PointProcess 'soundname$'_'soundname$'
-			shimmer_loc = Get shimmer (local)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			shimmer_loc_dB = Get shimmer (local_dB)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			shimmer_apq3 = Get shimmer (apq3)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			shimmer_apq5 = Get shimmer (apq5)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			shimmer_apq11 = Get shimmer (apq11)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			shimmer_dda = Get shimmer (dda)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
-			endproc
-			call Shimmer
+			   call Shimmer
 
 			# Get harmonicity
-			procedure Harmonicity
-			select Harmonicity 'soundname$'
-			hnr_mean = Get mean... vowel_start vowel_end
-			endproc
-			call Harmonicity
+			   call Harmonicity
 
 			# Get F1 and F2
-			procedure Formants
-			select Formant 'soundname$'
-			f1 = Get mean... 1 vowel_start vowel_end Hertz
-			f2 = Get mean... 2 vowel_start vowel_end Hertz
-			endproc
-			call Formants
+			   call Formants
+
+			# Get F0
+				call F0
 
 			# Make blank things NA
 			if word_label$ = ""
@@ -135,7 +128,7 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-			results_line$ = "'gridfile$'	'vowel_start'	'vowel_end'	'vowel_dur'	'vowel_label$'	'word_label$'	'phonation_label$'	'jitter_ddp'	'jitter_loc'	'jitter_loc_abs'	'jitter_rap'	'jitter_ppq5'	'shimmer_loc'	'shimmer_loc_dB'	'shimmer_apq3'	'shimmer_apq5'	'shimmer_apq11'	'shimmer_dda'	'hnr_mean'	'f1'	'f2'	'newline$'"
+			results_line$ = "'gridfile$','vowel_start:3','vowel_end:3','vowel_dur:3','vowel_label$','word_label$','phonation_label$','jitter_ddp:4','jitter_loc:6','jitter_loc_abs:6','jitter_rap:6','jitter_ppq5:6','shimmer_loc:4','shimmer_loc_dB:4','shimmer_apq3:4','shimmer_apq5:4','shimmer_apq11:4','shimmer_dda:4','hnr_mean:1','f1:0','f2:0','f0','newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
@@ -147,4 +140,68 @@ endfor
 select Strings gridlist
 Remove
 
-echo Done. 
+print Done. 
+
+#-------------------------------------------------------------------------#
+# PROCEDURES 
+
+procedure Jitter
+	select PointProcess 'soundname$'_'soundname$'
+	jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_ppq5 = Get jitter (ppq5)... vowel_start vowel_end 0.0001 0.02 1.3
+endproc
+			
+			
+procedure Shimmer
+	select Sound 'soundname$'
+	plus PointProcess 'soundname$'_'soundname$'
+	shimmer_loc = Get shimmer (local)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+	shimmer_loc_dB = Get shimmer (local_dB)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+	shimmer_apq3 = Get shimmer (apq3)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+	shimmer_apq5 = Get shimmer (apq5)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+	shimmer_apq11 = Get shimmer (apq11)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+	shimmer_dda = Get shimmer (dda)... vowel_start vowel_end 0.0001 0.02 1.3 1.6
+endproc
+
+
+
+procedure Harmonicity
+	select Harmonicity 'soundname$'
+	hnr_mean = Get mean... vowel_start vowel_end
+endproc
+			
+			
+procedure Formants
+	select Formant 'soundname$'
+	f1 = Get mean... 1 vowel_start vowel_end Hertz
+	f2 = Get mean... 2 vowel_start vowel_end Hertz
+endproc
+
+procedure F0
+	select Pitch 'soundname$'
+	f0 = Get mean... vowel_start vowel_end Hertz
+endproc
+
+
+procedure set_parameters
+  minpitch = 75
+  maxpitch = 400
+  
+  harmonicity_timestep = 0.01
+  silence_thresh  = 0.1
+  periods_per_window = 1
+  
+  numformants = 5
+  maxformant = 5500
+  # CHANGE THE ABOVE SETTINGS BY GENDER!
+
+  # Set tier numbers
+  phone_tier = 1
+  word_tier = 2
+  transcription_tier = 3
+  phonation_tier = 4
+  
+endproc
