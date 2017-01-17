@@ -1,6 +1,7 @@
 import csv
 import random
 from sklearn import svm, metrics
+from sklearn.model_selection import cross_val_predict
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
@@ -38,17 +39,6 @@ def pickFeatures(line):
 			line["shimmer_loc"], line["shimmer_apq3"], line["shimmer_apq5"], line["shimmer_apq11"], line["shimmer_dda"]]
 	features = [1 if i == "--undefined--" else i for i in features]
 	return features, label
-
-# Shuffles tuples of features, label
-# Puts first 80% in training data
-# Puts last 20% in test data
-def splitData(dataPoints):
-	random.shuffle(dataPoints)
-	total = len(dataPoints)
-	cutoff = int(total * .8)
-	train = dataPoints[:cutoff]
-	test = dataPoints[cutoff:]
-	return train, test
 
 # Returns confusion matrix
 def confusionMatrix(testy, predictedy):
@@ -108,14 +98,12 @@ def printAccuracy(testy, predictedy):
 def main():
 	stopWords = makeList("/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
 	dataPoints = getData("/Users/Laura/Desktop/Dissertation/test-data/results.txt", stopWords)
-	train, test = splitData(dataPoints)
-	trainx, trainy = zip(*train)
-	testx, testy = zip(*test)
+	random.shuffle(dataPoints)
+	trainx, trainy = zip(*dataPoints)
 	clf = svm.SVC()
-	clf.fit(trainx, trainy) 
-	predictedy = clf.predict(testx)
-	printAccuracy(testy, predictedy)
-	cnf_matrix = confusionMatrix(testy, predictedy)
+	predictedy = cross_val_predict(clf, trainx, trainy, cv=10)
+	print(metrics.accuracy_score(trainy, predictedy))
+	cnf_matrix = confusionMatrix(trainy, predictedy)               
 	plt.figure()
 	plot_confusion_matrix(cnf_matrix, classes = ["B", "M", "C"], title = 'Confusion Matrix')
 	plt.show()
