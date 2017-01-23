@@ -2,6 +2,7 @@ import csv
 import random
 from sklearn import svm, metrics
 from sklearn.svm import SVC
+from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import cross_val_predict, StratifiedShuffleSplit, GridSearchCV
 from matplotlib.colors import Normalize
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ import numpy as np
 import itertools
 import argparse
 import statistics
+import pandas as pd
 
 # Make a list from a file of words
 # Use this for the stop words to be excluded
@@ -25,13 +27,31 @@ def makeList(filename):
 # Returns a tuple of features, label
 def pickFeatures(line):
 	label = line["phonation"]
-	features = [line["gridfile"], line["jitter_ddp"], line["jitter_loc"], line["jitter_loc_abs"], line["jitter_rap"], line["jitter_ppq5"], 
-			line["shimmer_loc"], line["shimmer_apq3"], line["shimmer_apq5"], line["shimmer_apq11"], line["F0"]]
+	features = [line["gridfile"], 
+			line["jitter_ddp"], line["jitter_loc"], line["jitter_loc_abs"], line["jitter_rap"], line["jitter_ppq5"], 
+			line["jitter_ddp_1"], line["jitter_loc_1"], line["jitter_loc_abs_1"], line["jitter_rap_1"], line["jitter_ppq5_1"],
+			line["jitter_ddp_2"], line["jitter_loc_2"], line["jitter_loc_abs_2"], line["jitter_rap_2"], line["jitter_ppq5_2"],
+			line["jitter_ddp_3"], line["jitter_loc_3"], line["jitter_loc_abs_3"], line["jitter_rap_3"], line["jitter_ppq5_3"],
+			line["shimmer_loc"], line["shimmer_apq3"], line["shimmer_apq5"], line["shimmer_apq11"], 
+			line["shimmer_loc_1"], line["shimmer_apq3_1"], line["shimmer_apq5_1"], line["shimmer_apq11_1"], 
+			line["shimmer_loc_2"], line["shimmer_apq3_2"], line["shimmer_apq5_2"], line["shimmer_apq11_2"],
+			line["shimmer_loc_3"], line["shimmer_apq3_3"], line["shimmer_apq5_3"], line["shimmer_apq11_3"],
+			line["hnr"], line["hnr_1"], line["hnr_2"], line["hnr_3"], 
+			line["energy"],line["energy_1"],line["energy_2"], line["energy_3"], 
+			line["F0"], line["F0_1"], line["F0_2"], line["F0_3"]]
 	return features, label
 
 # Returns confusion matrix
 def confusionMatrix(testy, predictedy):
 	return metrics.confusion_matrix(testy, predictedy, labels = ["B", "M", "C"])
+
+# Plots Pandas crosstab, including sums
+# Zeroes don't show up
+def confusionMatrixPandas(trainy, predictedy):
+	y_actu = pd.Series(trainy, name='Actual')
+	y_pred = pd.Series(predictedy, name='Predicted')
+	df_confusion = pd.crosstab(y_actu, y_pred, rownames=['Actual'], colnames=['Predicted'], margins=True)
+	return df_confusion
 
 # Plots confusion matrix
 def plot_confusion_matrix(cm, classes,
@@ -67,7 +87,8 @@ def plot_confusion_matrix(cm, classes,
 # Calls pickFeatures to add only specific features to the list
 def getData(filename, stopWords):
 	dataPoints = []
-	phonationLabs = ["B", "C", "M"]
+	phonationLabs = ["B", "C", "M"] # Use line below to test precision and recall
+	#phonationLabs = ["C", "M"]
 	with open(filename) as f:
 		reader = csv.DictReader(f)
 		for line in reader:
@@ -110,25 +131,31 @@ def zNorm(data):
 	for datapoint in data:
 		datapoint[0].pop(0)
 
-	print(data)
+def prfs(trainy, predictedy):
+	y_true = np.array(trainy)
+	y_pred = np.array(predictedy)
+	return precision_recall_fscore_support(y_true, y_pred, average='macro')
 
 def main():
 	args = parseArgs()
 	stopWords = makeList(args.stoplist)
 	dataPoints = getData(args.data, stopWords)
 	zNorm(dataPoints)
-	# Remove speaker name
 	#stopWords = makeList("/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
 	#dataPoints = getData("/Users/Laura/Desktop/Dissertation/test-data/results.txt", stopWords)
 	random.shuffle(dataPoints)
 	trainx, trainy = zip(*dataPoints)
-
 	#clf = svm.SVC(kernel = 'rbf', C = .1, gamma = 0.001)
 	#clf = svm.SVC(kernel = 'rbf')
 	clf = svm.SVC()
 	predictedy = cross_val_predict(clf, trainx, trainy, cv=10)
 	print(metrics.accuracy_score(trainy, predictedy))
-	cnf_matrix = confusionMatrix(trainy, predictedy)               
+	cnf_matrix = confusionMatrix(trainy, predictedy)  
+	print(confusionMatrixPandas(trainy, predictedy))  
+	p, r, f, s = prfs(trainy, predictedy)
+	print("Precision: ", p)   
+	print("Recall: ", r)
+	print("F-score: ", f)      
 	plt.figure()
 	plot_confusion_matrix(cnf_matrix, classes = ["B", "M", "C"], title = 'Confusion Matrix')
 	plt.show()
