@@ -3,7 +3,7 @@ import csv
 import random
 from sklearn import svm, metrics
 from sklearn.svm import SVC
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, mean_squared_error
 from sklearn.model_selection import cross_val_predict, StratifiedShuffleSplit, GridSearchCV
 from matplotlib.colors import Normalize
 import matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ import argparse
 import statistics
 import pandas as pd
 import sys
+import itertools
 
 # Inputs should be path for stop list and path for data files (Praat, VS)
 def parseArgs():
@@ -95,7 +96,37 @@ def confusionMatrix(trainy, predictedy):
 def prfs(trainy, predictedy):
 	y_true = np.array(trainy)
 	y_pred = np.array(predictedy)
-	return precision_recall_fscore_support(y_true, y_pred, average='weighted')
+	return precision_recall_fscore_support(y_true, y_pred, average = 'weighted')
+
+# Calculates the difference between the four pitch tracks
+def pitchDiff(data):
+	BDiff = []
+	MDiff = []
+	CDiff = []
+	for row in data:
+		total = 0
+		phonation = row[6]
+		strF0 = row[104]
+		sF0 = row[105]
+		pF0 = row[106]
+		shrF0 = row[107]
+		tracks = [strF0, sF0, pF0, shrF0]
+		pairs = (list(itertools.combinations(tracks, 2)))
+		for pair in pairs:
+			a = float(pair[0])
+			b = float(pair[1])
+			diff = abs(a - b)
+			total += diff
+		if phonation == "B":
+			BDiff.append(total)
+		if phonation == "M":
+			MDiff.append(total)
+		if phonation == "C":
+			CDiff.append(total)
+	toPlot = [BDiff, MDiff, CDiff]
+	plt.boxplot(toPlot, labels = ["B", "M", "C"])
+	plt.show()
+	# Append to list?
 
 def main():
 	args = parseArgs()
@@ -104,6 +135,7 @@ def main():
 	data = combineData(praatData, VSData)
 	stopWords = getStopWords(args.stoplist)
 	data = remStopWords(data, stopWords)
+	pitchDiff(data)
 	x, y = pickFeatures(data)
 	x = undefined(x)
 	# Z-normalize
