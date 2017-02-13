@@ -5,6 +5,7 @@ from sklearn import svm, metrics
 from sklearn.svm import SVC
 from sklearn.metrics import precision_recall_fscore_support, mean_squared_error
 from sklearn.model_selection import cross_val_predict, StratifiedShuffleSplit, GridSearchCV
+from matplotlib import rc
 from matplotlib.colors import Normalize
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +15,19 @@ import statistics
 import pandas as pd
 import sys
 import itertools
+from statsmodels.tools import tools
+from statsmodels.discrete.discrete_model import MNLogit
+
+# Set font for plots to use CM from LaTeX
+rc('font',**{'family':'serif','serif':['Computer Modern Roman']})
+params = {'backend': 'ps',
+	'axes.labelsize': 25,
+	'text.fontsize': 25,
+	'legend.fontsize': 10,
+	'xtick.labelsize': 15,
+	'ytick.labelsize': 15,
+	'text.usetex': True}
+plt.rcParams.update(params)
 
 # Inputs should be path for stop list and path for data files (Praat, VS)
 def parseArgs():
@@ -35,6 +49,7 @@ def getStopWords(filename):
 
 # Remove anything but B M C
 # Return array of data and list of headers
+# x is the index of the column containing labels
 def prepData(filename, x):
 	data = []
 	phonationLabs = ["B", "C", "M"]
@@ -63,17 +78,19 @@ def remStopWords(data, stopWords):
 	np.savetxt('out.txt', data, fmt = '%s')
 	return data
 
-# Returns a new data set with only the features to be included
+# Returns an array with lists of features (x) and a list of labels (y)
 def pickFeatures(data):
 	xlist = [] # x = features
 	y = [] # y = labels
+	speakerList = []
 	for row in data:
 		# local jitter, CPP mean, energy mean, HNR25, strF0
 		xline = [row[8], row[82], row[83], row[86], row[104]] 
 		xlist.append(xline) 
 		y.append(row[6])
+		speakerList.append(row[0])
 	x = np.array(xlist)
-	return x, y
+	return x, y, speakerList
 
 # Count measured that are "undefined"
 # Replace "undefined" with 1
@@ -84,15 +101,18 @@ def undefined(x):
 			if row[i] == '--undefined--':
 				udefCount += 1
 				row[i] = 1 # Change this line to change what --undefined-- becomes
-	print("Undefined:", udefCount)
+	#print("Undefined:", udefCount)
+	x = x.astype(float)
 	return x
 
+# Returns the confusion matrix, including sums
 def confusionMatrix(trainy, predictedy):
 	y_actu = pd.Series(trainy, name='Actual')
 	y_pred = pd.Series(predictedy, name='Predicted')
 	df_confusion = pd.crosstab(y_actu, y_pred, rownames=['Actual'], colnames=['Predicted'], margins=True)
 	return df_confusion
 
+# Calculates precision, recall, fscore, and support
 def prfs(trainy, predictedy):
 	y_true = np.array(trainy)
 	y_pred = np.array(predictedy)
@@ -103,6 +123,7 @@ def pitchDiff(data):
 	BDiff = []
 	MDiff = []
 	CDiff = []
+	allDiff = []
 	for row in data:
 		total = 0
 		phonation = row[6]
@@ -117,16 +138,57 @@ def pitchDiff(data):
 			b = float(pair[1])
 			diff = abs(a - b)
 			total += diff
+		allDiff.append([phonation, total])
 		if phonation == "B":
 			BDiff.append(total)
 		if phonation == "M":
 			MDiff.append(total)
 		if phonation == "C":
 			CDiff.append(total)
+	#y, x = zip(*allDiff)
+	#logit = MNLogit(y, tools.add_constant(x))
+	#result = logit.fit()
+	#print(result.summary())
 	toPlot = [BDiff, MDiff, CDiff]
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
 	plt.show()
 	# Append to list?
+
+# Takes an array of all data, a corresponding list of speakers, and feature to normalize
+# bySpeaker: key = speaker; value = list of 
+def zNorm(x, speakerList, index):
+	bySpeaker = {}
+	# For each row in x
+	for i in range(len(x)):
+		# If that speaker isn't yet in the dictionary:
+		if speakerList[i] not in bySpeaker:
+			# Add that speaker to the dictionary with an empty value
+			bySpeaker[speakerList[i]] = []
+		# Add the row # at the index to the value list
+		bySpeaker[speakerList[i]].append(i)
+	# For each key's value list
+	for valList in bySpeaker.values():
+		# Make temporary list of actual measures for each speaker
+		tempList = []
+		# For each value in the value list (which is actually a row #):
+		for val in valList:
+			# Find the actual # it represents
+			measure = x[val,index]
+			# Add that measure to tempList
+			tempList.append(measure)
+		# Get mean of values in tempList
+		featureMean = statistics.mean(tempList)
+		# Get STD of values in tempList
+		featureSTD = statistics.stdev(tempList)
+		# For each number in tempList
+		for i in range(len(tempList)):
+			# Calculate z score (jitter - mean)/STD
+			zmeasure = ((tempList[i] - featureMean) / featureSTD)
+			x[valList[i],index] = zmeasure
+
+def zNormFeatures(x, speakerList, featureList):
+	for feature in featureList:
+		zNorm(x, speakerList, feature)
 
 def main():
 	args = parseArgs()
@@ -135,10 +197,11 @@ def main():
 	data = combineData(praatData, VSData)
 	stopWords = getStopWords(args.stoplist)
 	data = remStopWords(data, stopWords)
-	pitchDiff(data)
-	x, y = pickFeatures(data)
+	#pitchDiff(data)
+	x, y, speakerList = pickFeatures(data)
 	x = undefined(x)
-	# Z-normalize
+	featureList = [0, 1, 2] # Pick features to normalize here
+	zNormFeatures(x, speakerList, featureList)
 	# Shuffle?
 	clf = svm.SVC()
 	predictedy = cross_val_predict(clf, x, y, cv = 10)
