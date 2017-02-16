@@ -54,11 +54,14 @@ def prepData(filename, x):
 	data = []
 	phonationLabs = ["B", "C", "M"]
 	with open(filename) as f:
+		count = 0
 		reader = csv.reader(f)
 		header = next(reader)
 		for line in reader:
+			count += 1
 			if line[x] in phonationLabs:
 				data.append(line)
+	print("Vowels, total:", count)
 	data = np.array(data)
 	return data, header
 
@@ -66,6 +69,7 @@ def prepData(filename, x):
 # At this point, 0 and 1 have been removed but stop words have not; undefined remains
 def combineData(praat, VS):
 	data = np.concatenate((praat, VS), axis = 1)
+	print("Vowels, without 0 or 1:", len(data))
 	return data
 
 # Removes stop words
@@ -76,6 +80,7 @@ def remStopWords(data, stopWords):
 	remove = np.array(remove)
 	data = data[remove]
 	np.savetxt('out.txt', data, fmt = '%s')
+	print("Vowels, without stop words, 0, or 1:", len(data))
 	return data
 
 # Returns an array with lists of features (x) and a list of labels (y)
@@ -101,7 +106,7 @@ def undefined(x):
 			if row[i] == '--undefined--':
 				udefCount += 1
 				row[i] = 1 # Change this line to change what --undefined-- becomes
-	#print("Undefined:", udefCount)
+	print("Undefined:", udefCount)
 	x = x.astype(float)
 	return x
 
@@ -154,6 +159,7 @@ def pitchDiff(data):
 	plt.show()
 	# Append to list?
 
+# Z-normalizes one feature by speaker
 # Takes an array of all data, a corresponding list of speakers, and feature to normalize
 # bySpeaker: key = speaker; value = list of 
 def zNorm(x, speakerList, index):
@@ -186,6 +192,7 @@ def zNorm(x, speakerList, index):
 			zmeasure = ((tempList[i] - featureMean) / featureSTD)
 			x[valList[i],index] = zmeasure
 
+# Runs z normalization over whatever features listed
 def zNormFeatures(x, speakerList, featureList):
 	for feature in featureList:
 		zNorm(x, speakerList, feature)
@@ -197,10 +204,11 @@ def main():
 	data = combineData(praatData, VSData)
 	stopWords = getStopWords(args.stoplist)
 	data = remStopWords(data, stopWords)
-	#pitchDiff(data)
+	#pitchDiff(data) # This does not append the pitch diff to the feature array
 	x, y, speakerList = pickFeatures(data)
 	x = undefined(x)
 	featureList = [0, 1, 2] # Pick features to normalize here
+	"""
 	zNormFeatures(x, speakerList, featureList)
 	# Shuffle?
 	clf = svm.SVC()
@@ -212,6 +220,7 @@ def main():
 	print("Accuracy:", metrics.accuracy_score(y, predictedy))
 	print("-------------------------")
 	print(confusionMatrix(y, predictedy))
+"""
 
 """	
 # Grid search - not tested yet in smaller version
