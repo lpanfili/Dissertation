@@ -1,22 +1,7 @@
-# python3 countUndefined.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/test-data2/results.txt
+# python3 countUndefined.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/Code/pitch-settings/results-default.txt
 import csv
-#import random
-#from sklearn import svm, metrics
-#from sklearn.svm import SVC
-#from sklearn.metrics import precision_recall_fscore_support, mean_squared_error
-#from sklearn.model_selection import cross_val_predict, StratifiedShuffleSplit, GridSearchCV
-#from matplotlib import rc
-#from matplotlib.colors import Normalize
-#import matplotlib.pyplot as plt
 import numpy as np
-#import itertools
 import argparse
-#import statistics
-#import pandas as pd
-#import sys
-#import itertools
-#from statsmodels.tools import tools
-#from statsmodels.discrete.discrete_model import MNLogit
 
 # Inputs should be path for stop list and path for data files (Praat, VS)
 def parseArgs():
@@ -68,16 +53,15 @@ def remStopWords(data, stopWords):
 # Replace "undefined" with 1
 def undefined(x):
 	udefCount = 0
+	total = 0
 	for row in x:
 		for i in range(len(row)):
+			total += 1
 			if row[i] == '--undefined--':
 				udefCount += 1
 	print("Undefined:", udefCount)
-
-# Runs z normalization over whatever features listed
-def zNormFeatures(x, speakerList, featureList):
-	for feature in featureList:
-		zNorm(x, speakerList, feature)
+	print("Total:", total)
+	print("Percent:", float((udefCount/total) * 100))
 
 def main():
 	args = parseArgs()
