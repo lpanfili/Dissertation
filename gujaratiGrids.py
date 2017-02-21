@@ -10,7 +10,7 @@ for root, dirs, files in os.walk("/Users/Laura/Desktop/Dissertation/Gujarati/tes
 		if name != ".DS_Store":
 			newname = name.replace("-UCLA", "")
 			with open(os.path.join(root,name), 'r') as f:
-				with open(os.path.join(root,newname), 'w') as newf:
+				with open(os.path.join("/Users/Laura/Desktop/Dissertation/Gujarati/test-1/",newname), 'w') as newf:
 					lines = f.readlines()
 					i = 0
 					while 'phonation' not in lines[i]:
@@ -20,9 +20,9 @@ for root, dirs, files in os.walk("/Users/Laura/Desktop/Dissertation/Gujarati/tes
 						i += 1
 					for x in range(i,len(lines)):
 						# replace anything ending with '=' with 'B'
-						line = re.sub(r'.*\=', r'B', lines[x])
+						line = re.sub(r'(text\s\=\s").*\=', r'\1B', lines[x])
 						# replace anything ending with 'h' or 'H' with nothing
-						line = re.sub(r'.*[hH]','',line)
+						line = re.sub(r'(text\s=\s").*[hH]',r'\1', line)
 						# replace anything else with M
-						line = re.sub(r'.*','M', line)
-						newf.write(lines[x])
+						line = re.sub(r'(text\s=\s").*"',r'\1M"', line)
+						newf.write(line)
