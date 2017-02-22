@@ -52,16 +52,34 @@ def remStopWords(data, stopWords):
 # Count measured that are "undefined"
 # Replace "undefined" with 1
 def undefined(x):
-	udefCount = 0
-	total = 0
+	udefCount = 0 # overall undefined count
+	udM = 0 # male undefined count
+	udF = 0 # female undefined count
+	total = 0 # overall total
+	mTotal = 0 # male total
+	fTotal = 0 # female total
 	for row in x:
-		for i in range(len(row)):
-			total += 1
-			if row[i] == '--undefined--':
-				udefCount += 1
+		if "NWF" in row[0]:
+			for i in range(len(row)):
+				fTotal += 1
+				if row[i] == "--undefined--":
+					udF += 1
+		if "NWM" in row[0]:
+			for i in range(len(row)):
+				mTotal += 1
+				if row[i] == "--undefined--":
+					udM += 1
+	total = fTotal + mTotal
+	udefCount = udF + udM
 	print("Undefined:", udefCount)
 	print("Total:", total)
 	print("Percent:", float((udefCount/total) * 100))
+	print("Male Undefined:", udM)
+	print("Male Total:", mTotal)
+	print("Male Percent:", float((udM/mTotal) * 100))
+	print("Female Undefined:", udF)
+	print("Female Total:", fTotal)
+	print("Female Percent:", float((udF/fTotal) * 100))
 
 def main():
 	args = parseArgs()
