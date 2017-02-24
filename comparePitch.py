@@ -1,4 +1,4 @@
-# python3 comparePitch.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/Code/vopt/NWF089-3.txt
+# python3 comparePitch.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt NWF090
 import csv
 import random
 from sklearn import svm, metrics
@@ -31,7 +31,7 @@ def setFont():
 def parseArgs():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("stoplist")
-	parser.add_argument("VS")
+	parser.add_argument("speaker")
 	return parser.parse_args()
 
 # Make a list from a file of words
@@ -52,7 +52,7 @@ def prepData(filename, x):
 	phonationLabs = ["B", "C", "M"]
 	with open(filename) as f:
 		count = 0
-		reader = csv.reader(f)#, delimiter = '\t')
+		reader = csv.reader(f, delimiter = '\t')
 		header = next(reader)
 		for line in reader:
 			count += 1
@@ -70,6 +70,12 @@ def remStopWords(data, stopWords):
 	remove = np.array(remove)
 	data = data[remove]
 	print("Vowels, without stop words, 0, or 1:", len(data))
+	return data
+
+# Gets data ready for pitch comparisons
+def clean(data, stopWords):
+	data, VSHeader = prepData(data, 1)
+	data = remStopWords(data, stopWords)
 	return data
 
 # Calculates the difference between the four pitch tracks
@@ -102,15 +108,15 @@ def meanPitchDiff(data):
 			CDiff.append(total)
 	toPlot = [BDiff, MDiff, CDiff]
 	plt.title(speaker)
+	plt.ylim([0,1600])
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
 	plt.show()
 	# Compare modal to non-modal
-	NMDiff = BDiff + CDiff
-	toPlot = [MDiff, NMDiff]
-	plt.title(speaker)
-	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	plt.show()
-
+	#NMDiff = BDiff + CDiff
+	#toPlot = [MDiff, NMDiff]
+	#plt.title(speaker)
+	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
+	#plt.show()
 
 def pitchDiff3(data):
 	BDiff3 = []
@@ -142,13 +148,14 @@ def pitchDiff3(data):
 			CDiff3.append(total)
 	toPlot = [BDiff3, MDiff3, CDiff3]
 	plt.title(speaker)
+	plt.ylim([0,600000])
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
 	plt.show()
-	NMDiff3 = BDiff3 + CDiff3
-	toPlot = [MDiff3, NMDiff3]
-	plt.title(speaker)
-	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	plt.show()
+	#NMDiff3 = BDiff3 + CDiff3
+	#toPlot = [MDiff3, NMDiff3]
+	#plt.title(speaker)
+	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
+	#plt.show()
 
 def pitchDiff10(data):
 	BDiff10 = []
@@ -187,23 +194,29 @@ def pitchDiff10(data):
 			CDiff10.append(total)
 	toPlot = [BDiff10, MDiff10, CDiff10]
 	plt.title(speaker)
+	plt.ylim([0,600000])
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
 	plt.show()
-	NMDiff10 = BDiff10 + CDiff10
-	toPlot = [MDiff10, NMDiff10]
-	plt.title(speaker)
-	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	plt.show()
+	#NMDiff10 = BDiff10 + CDiff10
+	#toPlot = [MDiff10, NMDiff10]
+	#plt.title(speaker)
+	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
+	#plt.show()
 
 def main():
 	setFont()
 	args = parseArgs()
-	data, VSHeader = prepData(args.VS, 1)
+	speaker = args.speaker
 	stopWords = getStopWords(args.stoplist)
-	data = remStopWords(data, stopWords)
-	meanPitchDiff(data)
-	#pitchDiff3(data)
-	#pitchDiff10(data)
+	one = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-1.txt"])
+	three = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-3.txt"])
+	ten = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-10.txt"])
+	dataOne = clean(one, stopWords)
+	dataThree = clean(three, stopWords)
+	dataTen = clean(ten, stopWords)
+	meanPitchDiff(dataOne)
+	pitchDiff3(dataThree)
+	pitchDiff10(dataTen)
 
 if __name__ == "__main__":
 	main()
