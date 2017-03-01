@@ -14,6 +14,7 @@ import pandas as pd
 import sys
 import itertools
 from statsmodels.tools import tools
+import math
 
 # Set font for plots to use CM from LaTeX
 def setFont():
@@ -58,7 +59,7 @@ def prepData(filename, x):
 			count += 1
 			if line[x] in phonationLabs:
 				data.append(line)
-	print("Vowels, total:", count)
+	#print("Vowels, total:", count)
 	data = np.array(data)
 	return data, header
 
@@ -69,7 +70,7 @@ def remStopWords(data, stopWords):
 		remove.append(row[5] not in stopWords)
 	remove = np.array(remove)
 	data = data[remove]
-	print("Vowels, without stop words, 0, or 1:", len(data))
+	#print("Vowels, without stop words, 0, or 1:", len(data))
 	return data
 
 # Gets data ready for pitch comparisons
@@ -83,10 +84,9 @@ def meanPitchDiff(data):
 	BDiff = []
 	MDiff = []
 	CDiff = []
-	allDiff = []
 	for row in data:
 		speaker = row[0][:6]
-		total = 0
+		VoPT = 0
 		phonation = row[1]
 		strF0 = row[40]
 		sF0 = row[41]
@@ -98,34 +98,17 @@ def meanPitchDiff(data):
 			a = float(pair[0])
 			b = float(pair[1])
 			diff = abs(a - b)
-			total += diff
-		allDiff.append([phonation, total])
-		if phonation == "B":
-			BDiff.append(total)
-		if phonation == "M":
-			MDiff.append(total)
-		if phonation == "C":
-			CDiff.append(total)
-	toPlot = [BDiff, MDiff, CDiff]
-	plt.title(speaker)
-	plt.ylim([0,1600])
-	plt.boxplot(toPlot, labels = ["B", "M", "C"])
-	plt.show()
-	# Compare modal to non-modal
-	#NMDiff = BDiff + CDiff
-	#toPlot = [MDiff, NMDiff]
-	#plt.title(speaker)
-	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	#plt.show()
+			VoPT += diff
+		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean")
 
-def pitchDiff3(data):
-	BDiff3 = []
-	MDiff3 = []
-	CDiff3 = []
-	#allDiff = []
+def meanPitchDiff3(data):
+	BDiff = []
+	MDiff = []
+	CDiff = []
 	for row in data:
 		speaker = row[0][:6]
-		total = 0
+		VoPT = 0
 		phonation = row[1]
 		strF0 = [float(row[149]), float(row[150]), float(row[151])]
 		sF0 = [float(row[153]), float(row[154]), float(row[155])]
@@ -137,33 +120,20 @@ def pitchDiff3(data):
 		for pair in pairs:
 			a = pair[0]
 			b = pair[1]
-			rmse = mean_squared_error(a, b)
-			total += rmse
+			rmse = math.sqrt(mean_squared_error(a, b))
+			VoPT += rmse
 		#allDiff.append([phonation, total])
-		if phonation == "B":
-			BDiff3.append(total)
-		if phonation == "M":
-			MDiff3.append(total)
-		if phonation == "C":
-			CDiff3.append(total)
-	toPlot = [BDiff3, MDiff3, CDiff3]
-	plt.title(speaker)
-	plt.ylim([0,600000])
-	plt.boxplot(toPlot, labels = ["B", "M", "C"])
-	plt.show()
-	#NMDiff3 = BDiff3 + CDiff3
-	#toPlot = [MDiff3, NMDiff3]
-	#plt.title(speaker)
-	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	#plt.show()
+		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean, Thirds")
+	#plotMNM(BDiff, MDiff, CDiff)
 
-def pitchDiff10(data):
-	BDiff10 = []
-	MDiff10 = []
-	CDiff10 = []
+def meanPitchDiff10(data):
+	BDiff = []
+	MDiff = []
+	CDiff = []
 	for row in data:
 		speaker = row[0][:6]
-		total = 0
+		VoPT = 0
 		phonation = row[1]
 		strF0 = [float(row[401]), float(row[402]), float(row[403]), float(row[404]), 
 				float(row[405]), float(row[406]), float(row[407]), float(row[408]), 
@@ -178,45 +148,174 @@ def pitchDiff10(data):
 				float(row[438]), float(row[439]), float(row[440]), float(row[441]), 
 				float(row[442]), float(row[443])]
 		tracks = [strF0, sF0, pF0, shrF0]
-		tracks = [strF0, sF0, pF0, shrF0]
 		pairs = (list(itertools.combinations(tracks, 2)))
 		for pair in pairs:
 			a = pair[0]
 			b = pair[1]
-			rmse = mean_squared_error(a, b)
-			total += rmse
+			rmse = math.sqrt(mean_squared_error(a, b))
+			VoPT += rmse
 		#allDiff.append([phonation, total])
-		if phonation == "B":
-			BDiff10.append(total)
-		if phonation == "M":
-			MDiff10.append(total)
-		if phonation == "C":
-			CDiff10.append(total)
-	toPlot = [BDiff10, MDiff10, CDiff10]
-	plt.title(speaker)
-	plt.ylim([0,600000])
-	plt.boxplot(toPlot, labels = ["B", "M", "C"])
-	plt.show()
-	#NMDiff10 = BDiff10 + CDiff10
-	#toPlot = [MDiff10, NMDiff10]
-	#plt.title(speaker)
-	#plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	#plt.show()
+		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean, Tenths")
 
+def pitchDiff3(data):
+	speaker = data[0][0][:6]
+	BDiff = []
+	MDiff = []
+	CDiff = []
+	allDiff = []
+	straight = []
+	snack = []
+	praat = []
+	shr = []
+	seg = data[0][2] # Start with the first segment
+	for row in data:
+		phonation = row[1]
+		if row[2] != seg:
+			strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr)
+			VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+			straight = []
+			snack = []
+			praat = []
+			shr = []
+			seg = row[2]
+		straight.append(row[40])
+		snack.append(row[41])
+		praat.append(row[42])
+		shr.append(row[43])
+	strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr)
+	VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+	BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	plotBMC(BDiff, MDiff, CDiff, speaker, "RMSE3")
+	#plotMNM(BDiff, MDiff, CDiff)
+
+def pitchDiff10(data):
+	speaker = data[0][0][:6]
+	BDiff = []
+	MDiff = []
+	CDiff = []
+	allDiff = []
+	straight = []
+	snack = []
+	praat = []
+	shr = []
+	seg = data[0][2] # Start with the first segment
+	for row in data:
+		phonation = row[1]
+		if row[2] != seg:
+			strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
+			VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+			straight = []
+			snack = []
+			praat = []
+			shr = []
+			seg = row[2]
+		straight.append(row[40])
+		snack.append(row[41])
+		praat.append(row[42])
+		shr.append(row[43])
+	strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
+	VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+	BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	plotBMC(BDiff, MDiff, CDiff, speaker, "RMSE10")
+	#plotMNM(BDiff, MDiff, CDiff)
+
+
+def pick3Points(straight, snack, praat, shr):
+	#print("All:", len(straight))
+	chunk = int(len(straight) / 4)
+	#print("Third:", chunk)
+	# Make track lists that have THREE points per vowel
+	strTrack = [float(straight[chunk]), float(straight[(chunk * 2)]), float(straight[(chunk * 3)])]
+	sTrack = [float(snack[chunk]), float(snack[(chunk * 2)]), float(snack[(chunk * 3)])]
+	pTrack = [float(praat[chunk]), float(praat[(chunk * 2)]), float(praat[(chunk * 3)])]
+	shrTrack = [float(shr[chunk]), float(shr[(chunk * 2)]), float(shr[(chunk * 3)])]
+	return strTrack, sTrack, pTrack, shrTrack
+
+def pick10Points(straight, snack, praat, shr):
+	#print("All:", len(straight))
+	chunk = int(len(straight) / 11)
+	#print("Third:", chunk)
+	# Make track lists that have TEN points per vowel
+	strTrack = [float(straight[chunk]), float(straight[(chunk * 2)]), float(straight[(chunk * 3)]), 
+				float(straight[(chunk * 4)]), float(straight[(chunk * 5)]), float(straight[(chunk * 6)]),
+				float(straight[(chunk * 7)]), float(straight[(chunk * 8)]), float(straight[(chunk * 9)]), float(straight[(chunk * 10)])]
+	sTrack = [float(snack[chunk]), float(snack[(chunk * 2)]), float(snack[(chunk * 3)]),
+			float(snack[(chunk * 4)]), float(snack[(chunk * 5)]), float(snack[(chunk * 6)]),
+			float(snack[(chunk * 7)]), float(snack[(chunk * 8)]), float(snack[(chunk * 9)]), float(snack[(chunk * 10)])]
+	pTrack = [float(praat[chunk]), float(praat[(chunk * 2)]), float(praat[(chunk * 3)]),
+			float(praat[(chunk * 4)]), float(praat[(chunk * 5)]), float(praat[(chunk * 6)]),
+			float(praat[(chunk * 7)]), float(praat[(chunk * 8)]), float(praat[(chunk * 9)]), float(praat[(chunk * 10)])]
+	shrTrack = [float(shr[chunk]), float(shr[(chunk * 2)]), float(shr[(chunk * 3)]),
+				float(shr[(chunk * 4)]), float(shr[(chunk * 5)]), float(shr[(chunk * 5)]),
+				float(shr[(chunk * 7)]), float(shr[(chunk * 8)]), float(shr[(chunk * 9)]), float(shr[(chunk * 10)])]
+	return strTrack, sTrack, pTrack, shrTrack
+
+def comparePoints(straight, snack, praat, shr):
+	total = 0
+	tracks = [straight, snack, praat, shr]
+	pairs = (list(itertools.combinations(tracks, 2)))
+	for pair in pairs:
+		a = pair[0]
+		b = pair[1]
+		rmse = math.sqrt(mean_squared_error(a, b))
+		total += rmse
+	return total
+
+# Adds the VoPT to the appropriate list depending on its vowel's pohonation
+# Returns the three lists
+def separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff):
+	if phonation == "B":
+		BDiff.append(VoPT)
+	if phonation == "M":
+		MDiff.append(VoPT)
+	if phonation == "C":
+		CDiff.append(VoPT)
+	return BDiff, MDiff, CDiff
+
+def plotBMC(BDiff, MDiff, CDiff, speaker, method):
+	toPlot = [BDiff, MDiff, CDiff]
+	plt.title(''.join([speaker, ", ", method]))
+	#plt.ylim([0,600000])
+	if method == "Mean":
+		plt.ylim([0,1600])
+	if method == "RMSE3":
+		plt.ylim([0,1800])	
+	if method == "RMSE10":
+		plt.ylim([0,1800])
+	plt.boxplot(toPlot, labels = ["B", "M", "C"])
+	#plt.show()
+	plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method]), dpi = "figure")
+	plt.clf()
+
+def plotMNM(BDiff, MDiff, CDiff):
+	NMDiff = BDiff + CDiff
+	toPlot = [MDiff, NMDiff]
+	#plt.title(speaker)
+	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
+	plt.show()
+	plt.clf()
+	
 def main():
 	setFont()
 	args = parseArgs()
 	speaker = args.speaker
 	stopWords = getStopWords(args.stoplist)
 	one = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-1.txt"])
-	three = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-3.txt"])
-	ten = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-10.txt"])
+	#three = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-3.txt"])
+	#ten = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-10.txt"])
+	big = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-all.txt"])
 	dataOne = clean(one, stopWords)
-	dataThree = clean(three, stopWords)
-	dataTen = clean(ten, stopWords)
+	#dataThree = clean(three, stopWords)
+	#dataTen = clean(ten, stopWords)
+	dataBig = clean(big, stopWords)
 	meanPitchDiff(dataOne)
-	pitchDiff3(dataThree)
-	pitchDiff10(dataTen)
+	#meanPitchDiff3(dataThree)
+	#meanPitchDiff10(dataTen)
+	pitchDiff3(dataBig)
+	pitchDiff10(dataBig)
 
 if __name__ == "__main__":
 	main()
