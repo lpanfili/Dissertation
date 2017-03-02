@@ -1,4 +1,4 @@
-# python3 comparePitch.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt NWF090
+# python3 comparePitch.py /Users/Laura/Desktop/Dissertation/data/phonetic_stoplist.txt NWF090
 import csv
 import random
 from sklearn import svm, metrics
@@ -45,6 +45,16 @@ def getStopWords(filename):
 			stopWords.append(line)
 	return stopWords
 
+# Returns a list of all the words in the dataset using the Praat data
+def getWords(filename):
+	words = []
+	with open(filename) as f:
+		reader = csv.reader(f, delimiter = '\t')
+		header = next(reader)
+		for line in reader:
+			words.append(line[3])
+	return words
+
 # Remove anything but B M C
 # Return array of data and list of headers
 # x is the index of the column containing labels
@@ -57,50 +67,43 @@ def prepData(filename, x):
 		header = next(reader)
 		for line in reader:
 			count += 1
-			if line[x] in phonationLabs:
+			if line[x] in phonationLabs: # Removes 0 and 1
 				data.append(line)
 	#print("Vowels, total:", count)
 	data = np.array(data)
 	return data, header
 
-# Removes stop words
-def remStopWords(data, stopWords):
-	remove = []
-	for row in data:
-		remove.append(row[5] not in stopWords)
-	remove = np.array(remove)
-	data = data[remove]
-	#print("Vowels, without stop words, 0, or 1:", len(data))
-	return data
-
 # Gets data ready for pitch comparisons
 def clean(data, stopWords):
 	data, VSHeader = prepData(data, 1)
-	data = remStopWords(data, stopWords)
 	return data
 
 # Calculates the difference between the four pitch tracks
-def meanPitchDiff(data):
+def meanPitchDiff(data, words, stopWords):
 	BDiff = []
 	MDiff = []
 	CDiff = []
+	count = 0
 	for row in data:
-		speaker = row[0][:6]
-		VoPT = 0
-		phonation = row[1]
-		strF0 = row[40]
-		sF0 = row[41]
-		pF0 = row[42]
-		shrF0 = row[43]
-		tracks = [strF0, sF0, pF0, shrF0]
-		pairs = (list(itertools.combinations(tracks, 2)))
-		for pair in pairs:
-			a = float(pair[0])
-			b = float(pair[1])
-			diff = abs(a - b)
-			VoPT += diff
-		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+		count += 1
+		if words[count] not in stopWords:
+			speaker = row[0][:6]
+			VoPT = 0
+			phonation = row[1]
+			strF0 = row[40]
+			sF0 = row[41]
+			pF0 = row[42]
+			shrF0 = row[43]
+			tracks = [strF0, sF0, pF0, shrF0]
+			pairs = (list(itertools.combinations(tracks, 2)))
+			for pair in pairs:
+				a = float(pair[0])
+				b = float(pair[1])
+				diff = abs(a - b)
+				VoPT += diff
+			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean")
+	plotMNM(BDiff, MDiff, CDiff, speaker, "Mean")
 
 def meanPitchDiff3(data):
 	BDiff = []
@@ -125,7 +128,7 @@ def meanPitchDiff3(data):
 		#allDiff.append([phonation, total])
 		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean, Thirds")
-	#plotMNM(BDiff, MDiff, CDiff)
+	plotMNM(BDiff, MDiff, CDiff, speaker, "Mean, Thirds")
 
 def meanPitchDiff10(data):
 	BDiff = []
@@ -157,8 +160,9 @@ def meanPitchDiff10(data):
 		#allDiff.append([phonation, total])
 		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean, Tenths")
+	plotMNM(BDiff, MDiff, CDiff, speaker, "Mean, Tenths")
 
-def pitchDiff3(data):
+def pitchDiff3(data, words, stopWords):
 	speaker = data[0][0][:6]
 	BDiff = []
 	MDiff = []
@@ -169,28 +173,32 @@ def pitchDiff3(data):
 	praat = []
 	shr = []
 	seg = data[0][2] # Start with the first segment
+	count = 1
 	for row in data:
 		phonation = row[1]
-		if row[2] != seg:
-			strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr)
-			VoPT = comparePoints(strF0, sF0, pF0, shrF0)
-			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
-			straight = []
+		if row[2] != seg: # If we're moving on to a different vowel
+			count += 1
+			if words[count] not in stopWords:
+				strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr) # Do these for the old one
+				VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+				BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+			straight = [] # Then clear everything
 			snack = []
 			praat = []
 			shr = []
 			seg = row[2]
-		straight.append(row[40])
+		straight.append(row[40]) # Otherwise just add everything
 		snack.append(row[41])
 		praat.append(row[42])
 		shr.append(row[43])
-	strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr)
-	VoPT = comparePoints(strF0, sF0, pF0, shrF0)
-	BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	if words[count] not in stopWords:
+		strF0, sF0, pF0, shrF0 = pick3Points(straight, snack, praat, shr) # Then do all this again for what's left
+		VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "RMSE3")
-	#plotMNM(BDiff, MDiff, CDiff)
+	plotMNM(BDiff, MDiff, CDiff, speaker, "RMSE3")
 
-def pitchDiff10(data):
+def pitchDiff10(data, words, stopWords):
 	speaker = data[0][0][:6]
 	BDiff = []
 	MDiff = []
@@ -201,12 +209,15 @@ def pitchDiff10(data):
 	praat = []
 	shr = []
 	seg = data[0][2] # Start with the first segment
+	count = 1
 	for row in data:
 		phonation = row[1]
 		if row[2] != seg:
-			strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
-			VoPT = comparePoints(strF0, sF0, pF0, shrF0)
-			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+			count += 1
+			if words[count] not in stopWords:
+				strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
+				VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+				BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 			straight = []
 			snack = []
 			praat = []
@@ -216,12 +227,12 @@ def pitchDiff10(data):
 		snack.append(row[41])
 		praat.append(row[42])
 		shr.append(row[43])
-	strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
-	VoPT = comparePoints(strF0, sF0, pF0, shrF0)
-	BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
+	if words[count] not in stopWords:
+		strF0, sF0, pF0, shrF0 = pick10Points(straight, snack, praat, shr)
+		VoPT = comparePoints(strF0, sF0, pF0, shrF0)
+		BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "RMSE10")
-	#plotMNM(BDiff, MDiff, CDiff)
-
+	plotMNM(BDiff, MDiff, CDiff, speaker, "RMSE10")
 
 def pick3Points(straight, snack, praat, shr):
 	#print("All:", len(straight))
@@ -278,24 +289,25 @@ def separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff):
 def plotBMC(BDiff, MDiff, CDiff, speaker, method):
 	toPlot = [BDiff, MDiff, CDiff]
 	plt.title(''.join([speaker, ", ", method]))
-	#plt.ylim([0,600000])
 	if method == "Mean":
 		plt.ylim([0,1600])
 	if method == "RMSE3":
 		plt.ylim([0,1800])	
 	if method == "RMSE10":
 		plt.ylim([0,1800])
+
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
 	#plt.show()
 	plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method]), dpi = "figure")
 	plt.clf()
 
-def plotMNM(BDiff, MDiff, CDiff):
+def plotMNM(BDiff, MDiff, CDiff, speaker, method):
 	NMDiff = BDiff + CDiff
 	toPlot = [MDiff, NMDiff]
-	#plt.title(speaker)
+	plt.title(''.join([speaker, ", ", method]))
+	plt.ylim([0,1600])
 	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
-	plt.show()
+	plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method, "MNM"]), dpi = "figure")
 	plt.clf()
 	
 def main():
@@ -303,19 +315,21 @@ def main():
 	args = parseArgs()
 	speaker = args.speaker
 	stopWords = getStopWords(args.stoplist)
-	one = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-1.txt"])
-	#three = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-3.txt"])
-	#ten = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-10.txt"])
-	big = ''.join(["/Users/Laura/Desktop/Dissertation/Code/vopt/", speaker, "-all.txt"])
+	praat = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-praat-1.txt"])
+	words = getWords(praat)
+	one = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-1.txt"])
+	#three = ''.join(["/Users/Laura/Desktop/Dissertation/data/", speaker, "/", speaker, "-vs-3.txt"])
+	#ten = ''.join(["/Users/Laura/Desktop/Dissertation/data", speaker, "/", speaker, "-vs-10.txt"])
+	big = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-all.txt"])
 	dataOne = clean(one, stopWords)
 	#dataThree = clean(three, stopWords)
 	#dataTen = clean(ten, stopWords)
 	dataBig = clean(big, stopWords)
-	meanPitchDiff(dataOne)
+	meanPitchDiff(dataOne, words, stopWords)
 	#meanPitchDiff3(dataThree)
 	#meanPitchDiff10(dataTen)
-	pitchDiff3(dataBig)
-	pitchDiff10(dataBig)
+	pitchDiff3(dataBig, words, stopWords)
+	pitchDiff10(dataBig, words, stopWords)
 
 if __name__ == "__main__":
 	main()
