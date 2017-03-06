@@ -1,4 +1,4 @@
-# python3 runClass2.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/NWF089/NWF089-praat.txt /Users/Laura/Desktop/Dissertation/NWF089/NWF089-VS.txt
+# python3 runClass2.py /Users/Laura/Desktop/Dissertation/data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/data/english/NWF089/NWF089-praat-1.txt /Users/Laura/Desktop/Dissertation/data/english/NWF089/NWF089-vs-1.txt
 import csv
 import random
 from sklearn import svm, metrics
@@ -16,18 +16,18 @@ import pandas as pd
 import sys
 import itertools
 from statsmodels.tools import tools
-from statsmodels.discrete.discrete_model import MNLogit
 
 # Set font for plots to use CM from LaTeX
-rc('font',**{'family':'serif','serif':['Computer Modern Roman']})
-params = {'backend': 'ps',
-	'axes.labelsize': 25,
-	'text.fontsize': 25,
-	'legend.fontsize': 10,
-	'xtick.labelsize': 15,
-	'ytick.labelsize': 15,
-	'text.usetex': True}
-plt.rcParams.update(params)
+def setFont():
+	rc('font',**{'family':'serif','serif':['Computer Modern Roman']})
+	params = {'backend': 'ps',
+		'axes.labelsize': 25,
+		'text.fontsize': 25,
+		'legend.fontsize': 10,
+		'xtick.labelsize': 15,
+		'ytick.labelsize': 15,
+		'text.usetex': True}
+	plt.rcParams.update(params)
 
 # Inputs should be path for stop list and path for data files (Praat, VS)
 def parseArgs():
@@ -55,7 +55,7 @@ def prepData(filename, x):
 	phonationLabs = ["B", "C", "M"]
 	with open(filename) as f:
 		count = 0
-		reader = csv.reader(f)
+		reader = csv.reader(f, delimiter = "\t")
 		header = next(reader)
 		for line in reader:
 			count += 1
@@ -79,7 +79,7 @@ def remStopWords(data, stopWords):
 		remove.append(row[5] not in stopWords)
 	remove = np.array(remove)
 	data = data[remove]
-	np.savetxt('out.txt', data, fmt = '%s')
+	#np.savetxt('/Users/Laura/Desktop/out.txt', data, fmt = '%s')
 	print("Vowels, without stop words, 0, or 1:", len(data))
 	return data
 
@@ -106,7 +106,6 @@ def undefined(x):
 			if row[i] == '--undefined--':
 				udefCount += 1
 				row[i] = 1 # Change this line to change what --undefined-- becomes
-	print("Undefined:", udefCount)
 	x = x.astype(float)
 	return x
 
@@ -122,42 +121,6 @@ def prfs(trainy, predictedy):
 	y_true = np.array(trainy)
 	y_pred = np.array(predictedy)
 	return precision_recall_fscore_support(y_true, y_pred, average = 'weighted')
-
-# Calculates the difference between the four pitch tracks
-def pitchDiff(data):
-	BDiff = []
-	MDiff = []
-	CDiff = []
-	allDiff = []
-	for row in data:
-		total = 0
-		phonation = row[6]
-		strF0 = row[104]
-		sF0 = row[105]
-		pF0 = row[106]
-		shrF0 = row[107]
-		tracks = [strF0, sF0, pF0, shrF0]
-		pairs = (list(itertools.combinations(tracks, 2)))
-		for pair in pairs:
-			a = float(pair[0])
-			b = float(pair[1])
-			diff = abs(a - b)
-			total += diff
-		allDiff.append([phonation, total])
-		if phonation == "B":
-			BDiff.append(total)
-		if phonation == "M":
-			MDiff.append(total)
-		if phonation == "C":
-			CDiff.append(total)
-	#y, x = zip(*allDiff)
-	#logit = MNLogit(y, tools.add_constant(x))
-	#result = logit.fit()
-	#print(result.summary())
-	toPlot = [BDiff, MDiff, CDiff]
-	plt.boxplot(toPlot, labels = ["B", "M", "C"])
-	plt.show()
-	# Append to list?
 
 # Z-normalizes one feature by speaker
 # Takes an array of all data, a corresponding list of speakers, and feature to normalize
@@ -197,17 +160,38 @@ def zNormFeatures(x, speakerList, featureList):
 	for feature in featureList:
 		zNorm(x, speakerList, feature)
 
+def addPitchDiff(data):
+	VoPTAdd = []
+	for row in data:
+		VoPT = [0]
+		strF0 = row[40]
+		sF0 = row[41]
+		pF0 = row[42]
+		shrF0 = row[43]
+		tracks = [strF0, sF0, pF0, shrF0]
+		pairs = (list(itertools.combinations(tracks, 2)))
+		for pair in pairs:
+			a = float(pair[0])
+			b = float(pair[1])
+			diff = abs(a - b)
+			VoPT[0] += diff
+		VoPTAdd.append([VoPT[0]])
+	data = np.append(data, VoPTAdd, 1)
+	#np.savetxt('/Users/Laura/Desktop/out-vopt.txt', data, fmt = '%s')
+	return data
+
 def main():
+	setFont()
 	args = parseArgs()
-	praatData, praatHeader = prepData(args.praat, 6)
+	praatData, praatHeader = prepData(args.praat, 4)
 	VSData, VSHeader = prepData(args.VS, 1)
-	data = combineData(praatData, VSData)
+	data = combineData(VSData, praatData)
 	stopWords = getStopWords(args.stoplist)
 	data = remStopWords(data, stopWords)
-	#pitchDiff(data) # This does not append the pitch diff to the feature array
-	x, y, speakerList = pickFeatures(data)
-	x = undefined(x)
-	featureList = [0, 1, 2] # Pick features to normalize here
+	daata = addPitchDiff(data)
+	#x, y, speakerList = pickFeatures(data)
+	#x = undefined(x)
+	#featureList = [0, 1, 2] # Pick features to normalize here
 	"""
 	zNormFeatures(x, speakerList, featureList)
 	# Shuffle?
