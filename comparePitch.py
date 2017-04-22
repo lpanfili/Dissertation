@@ -84,9 +84,11 @@ def meanPitchDiff(data, words, stopWords):
 	MDiff = []
 	CDiff = []
 	count = 0
+	wordCount = 0
 	for row in data:
 		count += 1
 		if words[count] not in stopWords:
+			wordCount += 1
 			speaker = row[0][:6]
 			VoPT = 0
 			phonation = row[1]
@@ -104,6 +106,8 @@ def meanPitchDiff(data, words, stopWords):
 			BDiff, MDiff, CDiff = separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff)
 	plotBMC(BDiff, MDiff, CDiff, speaker, "Mean")
 	plotMNM(BDiff, MDiff, CDiff, speaker, "Mean")
+	print("Total tokens:", wordCount)
+	print("Total B:", len(BDiff))
 
 def meanPitchDiff3(data):
 	BDiff = []
