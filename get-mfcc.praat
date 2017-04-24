@@ -2,7 +2,7 @@
 form Directories
 	comment Enter directory with TextGrids:
 	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data4
-	#sentence Textgrid_directory /home2/lpanfili/dissertation/praat/recordings
+	#sentence Textgrid_directory /home2/lpanfili/dissertation/ATAROS/
 	
 	
 	comment Enter name and location of results file:
@@ -29,7 +29,7 @@ print find results at 'results_file$''newline$'
 #-------------------------------------------------------------------------#
 # Initialize results file
 
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	mfcc_mean-1	mfcc_mean-2	mfcc_mean-3	mfcc_mean-4	mfcc_mean-5	mfcc_mean-6	mfcc_mean-7	mfcc_mean-8	mfcc_mean-9	mfcc_mean-10	mfcc_mean-11	mfcc_mean-12	mfcc_mean-13	mfcc_mean-14	mfcc_mean-15	mfcc_mean-16	mfcc_mean-17	mfcc_mean-18	mfcc_mean-19	mfcc_mean-20	mfcc_mean-21	mfcc_mean-22	mfcc_mean-23	mfcc_mean-24'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	mfcc_mean-1	mfcc_mean-2	mfcc_mean-3	mfcc_mean-4	mfcc_mean-5	mfcc_mean-6	mfcc_mean-7	mfcc_mean-8	mfcc_mean-9	mfcc_mean-10	mfcc_mean-11	mfcc_mean-12	mfcc_mean-13	mfcc_mean-14	mfcc_mean-15	mfcc_mean-16	mfcc_mean-17	mfcc_mean-18	mfcc_mean-19	mfcc_mean-20	mfcc_mean-21	mfcc_mean-22	mfcc_mean-23	mfcc_mean-24	stddv-1	stddv-2	stddv-3	stddv-4	stddv-5	stddv-6	stddv-7	stddv-8	stddv-9	stddv-10	stddv-11	stddv-12	stddv-13	stddv-14	stddv-15	stddv-16	stddv-17	stddv-18	stddv-19	stddv-20	stddv-21	stddv-22	stddv-23	stddv-24'newline$'"
 
 
 #-------------------------------------------------------------------------#
@@ -120,11 +120,13 @@ for ifile to numberoffiles
 			results_line$ = "'gridfile$'	'start:3'	'end:3'	'duration:3'	'vowel_label$'	'word_label$'	'phonation_label$'"
 
 			# Get MFCCs
+			mfccstddv$ = ""
 			for j from 1 to 24
 				call getMFCC: j
 				results_line$ = results_line$ + "	'mfcc_mean'"
+				mfccstddv$ = mfccstddv$ + "'stddv'	"
 			endfor
-			results_line$ = results_line$ + "'newline$'"
+			results_line$ = results_line$ + "	" + mfccstddv$ + "'newline$'"
 			select Sound 'filepart$'
 			Remove
 			select Matrix 'filepart$'
@@ -158,11 +160,14 @@ procedure makeMFCC
 endproc
 
 procedure getMFCC: coeff
+	# Gets average of one CC over the whole vowel
 	mfcc_total = 0.0
 	for i from 1 to col
 		mfcc = Get value in cell... coeff i
 		# First number is coefficient number
 		mfcc_total = mfcc + mfcc_total
+	# Gets stddv of one CC over the whole vowel at 10 ms frames
+	stddv = Get standard deviation... 0.0 col coeff-0.5 coeff+0.5
 	endfor
 	mfcc_mean = mfcc_total / col
 endproc
