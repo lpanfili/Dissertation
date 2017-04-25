@@ -4,7 +4,7 @@ form Directories
 	#sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data4
 	#sentence Textgrid_directory /home2/lpanfili/dissertation/ATAROS/
 	#sentence Textgrid_directory /Users/Laura/Desktop/test-data4/
-	sentence Textgrid_directory /Users/Laura/Desktop/zap-test/
+	sentence Textgrid_directory /Users/Laura/Desktop/Zapotec-All/
 	
 	
 	comment Enter name and location of results file:
@@ -82,7 +82,7 @@ for ifile to numberoffiles
 		# Get vowel annotation
 		vowel_label$ = Get label of interval... phone_tier phone_interval 
 		
-		if vowel_label$ <> ""
+		if vowel_label$ <> "" and vowel_label$ <> " "
 
 			# Calculate various time points
 			start = Get start point... phone_tier phone_interval
@@ -95,44 +95,47 @@ for ifile to numberoffiles
 			appendInfoLine: start 
 			appendInfoLine: end
 
+			if duration >= 0.01
 
-			# Get phonation annotation
-			phonation_interval = Get interval at time... phonation_tier midpoint
-			phonation_label$ = Get label of interval... phonation_tier phonation_interval
+				# Get phonation annotation
+				phonation_interval = Get interval at time... phonation_tier midpoint
+				phonation_label$ = Get label of interval... phonation_tier phonation_interval
 
-			# "file$" is just the name of the file (no ext or prefix)
-			file$ = replace$ (filename$, ".wav", "", 1)
-			filepart$ = file$ + "_part"
+				# "file$" is just the name of the file (no ext or prefix)
+				file$ = replace$ (filename$, ".wav", "", 1)
+				filepart$ = file$ + "_part"
 
-			# Make MFCC
-			call makeMFCC
+				# Make MFCC
+				call makeMFCC
 
-			# Make blank things NA
-			#if word_label$ = ""
-			#	word_label$ = "NA"
-			#endif
-			if phonation_label$ = ""
-				phonation_label$ = "NA"
+				# Make blank things NA
+				#if word_label$ = ""
+				#	word_label$ = "NA"
+				#endif
+				if phonation_label$ = ""
+					phonation_label$ = "NA"
+				endif
+				
+				# Output
+
+				results_line$ = "'gridfile$'	'start:3'	'end:3'	'duration:3'	'vowel_label$'	'junk'	'phonation_label$'"
+
+				# Get MFCCs
+				mfccstddv$ = ""
+				for j from 1 to 24
+					call getMFCC: j
+					results_line$ = results_line$ + "	'mfcc_mean'"
+					mfccstddv$ = mfccstddv$ + "'stddv'	"
+				endfor
+
+				results_line$ = results_line$ + "	" + mfccstddv$ + "'newline$'"
+				select Sound 'filepart$'
+				Remove
+				select Matrix 'filepart$'
+				Remove
+				select MFCC 'filepart$'
+				Remove
 			endif
-			
-			# Output
-
-			results_line$ = "'gridfile$'	'start:3'	'end:3'	'duration:3'	'vowel_label$'	'junk'	'phonation_label$'"
-
-			# Get MFCCs
-			mfccstddv$ = ""
-			for j from 1 to 24
-				call getMFCC: j
-				results_line$ = results_line$ + "	'mfcc_mean'"
-				mfccstddv$ = mfccstddv$ + "'stddv'	"
-			endfor
-			results_line$ = results_line$ + "	" + mfccstddv$ + "'newline$'"
-			select Sound 'filepart$'
-			Remove
-			select Matrix 'filepart$'
-			Remove
-			select MFCC 'filepart$'
-			Remove
 			
 			fileappend "'results_file$'" 'results_line$'
 		endif
@@ -153,7 +156,7 @@ print Done.
 procedure makeMFCC
 	select Sound 'soundname$'
 	Extract part... start end rectangular 1.0 no
-	To MFCC... 24 0.010 0.005 100.0 100.0 0.0  
+	To MFCC... 24 0.010 0.005 100.0 100.0 0.0
 	# The first number is number of coefficients
 	To Matrix
 	col = Get number of columns
