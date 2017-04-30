@@ -5,11 +5,11 @@
 import os
 import re
 
-for root, dirs, files in os.walk("/Users/Laura/Desktop/Mandarin_Grids-oldtest"):
+for root, dirs, files in os.walk("/Users/Laura/Desktop/Mandarin_Grids-old"):
 	for name in files:
 		if name != ".DS_Store":
 			with open(os.path.join(root,name), 'r') as f:
-				with open(os.path.join("/Users/Laura/Desktop/Mandarin_Grids-newtest",name), 'w') as newf:
+				with open(os.path.join("/Users/Laura/Desktop/Mandarin_Grids-new",name), 'w') as newf:
 					lines = f.readlines()
 					i = 0
 					while 'phonation' not in lines[i]:
