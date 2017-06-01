@@ -25,8 +25,16 @@ for root, dirs, files in os.walk("/Users/Laura/Desktop/Hmong_Grids-old"):
 						newf.write(lines[i])
 						i += 1
 					for x in range(i,len(lines)):
-						# Replace vowels with tone letters
-						phonation = "".join(['text = "', toneLetter, '"'])
-						line = re.sub(r'text\s=\s".+"', phonation, lines[x])
+						# Replace tone letters with phonation
+						if toneLetter == "g":
+							phonation = "B"
+						if toneLetter == "m":
+							phonation = "C"
+						modals = ["b", "x", "d", "j", "s", "v"]
+						if toneLetter in modals:
+							phonation = "M"
+						# Replace vowels with phonation
+						phonationLine = "".join(['text = "', phonation, '"'])
+						line = re.sub(r'text\s=\s".+"', phonationLine, lines[x])
 						newf.write(line)
 print(toneList)
