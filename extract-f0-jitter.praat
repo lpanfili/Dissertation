@@ -28,7 +28,7 @@ print find results at 'results_file$''newline$'
 
 #-------------------------------------------------------------------------#
 # Initialize results file
-results_header$ = "gridfile,vowel_start,vowel_end,vowel_dur,vowel_label,word_label,phonation,jitter_ddp,jitter_loc,jitter_loc_abs,jitter_rap,jitter_ppq5,f0'newline$'"
+results_header$ = "gridfile,vowel_start,vowel_end,vowel_dur,vowel_label,word_label,phonation,jitter_loc,jitter_loc_abs,jitter_rap,jitter_ppq5,f0'newline$'"
 
 #-------------------------------------------------------------------------#
 # Check if the results file already exists
@@ -120,7 +120,7 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-			results_line$ = "'gridfile$','vowel_start:3','vowel_end:3','vowel_dur:3','vowel_label$','word_label$','phonation_label$','jitter_ddp:6','jitter_loc:6','jitter_loc_abs:6','jitter_rap:6','jitter_ppq5:6','f0''newline$'"
+			results_line$ = "'gridfile$','vowel_start:3','vowel_end:3','vowel_dur:3','vowel_label$','word_label$','phonation_label$','jitter_loc:6','jitter_loc_abs:6','jitter_rap:6','jitter_ppq5:6','f0''newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
@@ -140,7 +140,6 @@ print Done.
 procedure Jitter
 	select PointProcess 'soundname$'_'soundname$'
 	# all
-	jitter_ddp = Get jitter (ddp)... vowel_start vowel_end 0.0001 0.02 1.3
 	jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
 	jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
 	jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3

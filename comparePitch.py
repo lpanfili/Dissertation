@@ -108,6 +108,9 @@ def meanPitchDiff(data, words, stopWords):
 	plotMNM(BDiff, MDiff, CDiff, speaker, "Mean")
 	print("Total tokens:", wordCount)
 	print("Total B:", len(BDiff))
+	print("Total M:", len(MDiff))
+	print("Total C:", len(CDiff))
+
 
 def meanPitchDiff3(data):
 	BDiff = []
@@ -292,7 +295,7 @@ def separatePhonation(VoPT, phonation, BDiff, MDiff, CDiff):
 
 def plotBMC(BDiff, MDiff, CDiff, speaker, method):
 	toPlot = [BDiff, MDiff, CDiff]
-	plt.title(''.join([speaker, ", ", method]))
+	#plt.title(''.join([speaker, ", ", method]))
 	if method == "Mean":
 		plt.ylim([0,1600])
 	if method == "RMSE3":
@@ -308,7 +311,7 @@ def plotBMC(BDiff, MDiff, CDiff, speaker, method):
 def plotMNM(BDiff, MDiff, CDiff, speaker, method):
 	NMDiff = BDiff + CDiff
 	toPlot = [MDiff, NMDiff]
-	plt.title(''.join([speaker, ", ", method]))
+	#plt.title(''.join(["speaker", ", ", method]))
 	plt.ylim([0,1600])
 	plt.boxplot(toPlot, labels = ["Modal", "Non-Modal"])
 	plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method, "MNM"]), dpi = "figure")
@@ -322,12 +325,12 @@ def main():
 	praat = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-praat-1.txt"])
 	words = getWords(praat)
 	one = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-1.txt"])
-	#three = ''.join(["/Users/Laura/Desktop/Dissertation/data/", speaker, "/", speaker, "-vs-3.txt"])
-	#ten = ''.join(["/Users/Laura/Desktop/Dissertation/data", speaker, "/", speaker, "-vs-10.txt"])
+	three = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-3.txt"])
+	ten = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-10.txt"])
 	big = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-all.txt"])
 	dataOne = clean(one, stopWords)
-	#dataThree = clean(three, stopWords)
-	#dataTen = clean(ten, stopWords)
+	dataThree = clean(three, stopWords)
+	dataTen = clean(ten, stopWords)
 	dataBig = clean(big, stopWords)
 	meanPitchDiff(dataOne, words, stopWords)
 	#meanPitchDiff3(dataThree)

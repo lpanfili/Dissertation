@@ -34,7 +34,7 @@ def prepData(filename, x):
 			count += 1
 			if line[x] in phonationLabs:
 				data.append(line)
-	#print("Vowels, total:", count)
+	print("Vowels, total:", count)
 	data = np.array(data)
 	return data, header
 
@@ -46,7 +46,7 @@ def remStopWords(data, stopWords):
 	remove = np.array(remove)
 	data = data[remove]
 	np.savetxt('out.txt', data, fmt = '%s')
-	#print("Vowels, without stop words, 0, or 1:", len(data))
+	print("Vowels, without stop words, 0, or 1:", len(data))
 	return data
 
 # Count measured that are "undefined"
@@ -58,13 +58,31 @@ def undefined(x):
 	total = 0 # overall total
 	mTotal = 0 # male total
 	fTotal = 0 # female total
+	fB = 0
+	fM = 0
+	fC = 0
+	mB = 0
+	mM = 0
+	mC = 0
 	for row in x:
 		if "NWF" in row[0]:
+			if row[6] == "B":
+				fB += 1
+			if row[6] == "M":
+				fM += 1
+			if row[6] == "C":
+				fC += 1
 			for i in range(len(row)):
 				fTotal += 1
 				if row[i] == "--undefined--":
 					udF += 1
 		if "NWM" in row[0]:
+			if row[6] == "B":
+				mB += 1
+			if row[6] == "M":
+				mM += 1
+			if row[6] == "C":
+				mC += 1
 			for i in range(len(row)):
 				mTotal += 1
 				if row[i] == "--undefined--":
@@ -80,6 +98,14 @@ def undefined(x):
 	print("Female Undefined:", udF)
 	print("Female Total:", fTotal)
 	print("Female Percent:", float((udF/fTotal) * 100))
+	print("Breathy, F:", fB)
+	print("Modal, F:", fM)
+	print("Creaky, F:", fC)
+	print("Breathy, M:", mB)
+	print("Modal, M:", mM)
+	print("Creaky, M:", mC)
+	print("Total F:", (fB + fM + fC))
+	print("Total M:", (mB + mM + mC))
 
 def main():
 	args = parseArgs()

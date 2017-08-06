@@ -1,3 +1,5 @@
+# python3 runClassification.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/test-data/results.txt
+# python3 runClassification.py /Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt /Users/Laura/Desktop/Dissertation/NWF089/NWF089-praat.txt /Users/Laura/Desktop/Dissertation/NWF089/NWF089-VS.txt
 import csv
 import random
 from sklearn import svm, metrics
@@ -11,6 +13,15 @@ import itertools
 import argparse
 import statistics
 import pandas as pd
+import sys
+
+# Inputs should be path for stop list and path for data files (Praat, VS)
+def parseArgs():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("stoplist")
+	parser.add_argument("praat")
+	parser.add_argument("VS")
+	return parser.parse_args()
 
 # Make a list from a file of words
 # Use this for the stop words to be excluded
@@ -23,22 +34,22 @@ def makeList(filename):
 	return stopWords
 
 # Picks which of the features to include
-# Replaces "undefined" with "1"
 # Returns a tuple of features, label
 def pickFeatures(line):
 	label = line["phonation"]
 	features = [line["gridfile"], 
-			line["jitter_ddp"], line["jitter_loc"], line["jitter_loc_abs"], line["jitter_rap"], line["jitter_ppq5"], 
-			line["jitter_ddp_1"], line["jitter_loc_1"], line["jitter_loc_abs_1"], line["jitter_rap_1"], line["jitter_ppq5_1"],
-			line["jitter_ddp_2"], line["jitter_loc_2"], line["jitter_loc_abs_2"], line["jitter_rap_2"], line["jitter_ppq5_2"],
-			line["jitter_ddp_3"], line["jitter_loc_3"], line["jitter_loc_abs_3"], line["jitter_rap_3"], line["jitter_ppq5_3"],
-			line["shimmer_loc"], line["shimmer_apq3"], line["shimmer_apq5"], line["shimmer_apq11"], 
-			line["shimmer_loc_1"], line["shimmer_apq3_1"], line["shimmer_apq5_1"], line["shimmer_apq11_1"], 
-			line["shimmer_loc_2"], line["shimmer_apq3_2"], line["shimmer_apq5_2"], line["shimmer_apq11_2"],
-			line["shimmer_loc_3"], line["shimmer_apq3_3"], line["shimmer_apq5_3"], line["shimmer_apq11_3"],
+			#line["jitter_ddp"], line["jitter_loc"], line["jitter_loc_abs"], line["jitter_rap"], line["jitter_ppq5"], 
+			line["jitter_loc"], line["jitter_loc_abs"],
+			#line["jitter_ddp_1"], line["jitter_loc_1"], line["jitter_loc_abs_1"], line["jitter_rap_1"], line["jitter_ppq5_1"],
+			#line["jitter_ddp_2"], line["jitter_loc_2"], line["jitter_loc_abs_2"], line["jitter_rap_2"], line["jitter_ppq5_2"],
+			#line["jitter_ddp_3"], line["jitter_loc_3"], line["jitter_loc_abs_3"], line["jitter_rap_3"], line["jitter_ppq5_3"],
+			line["shimmer_loc"], line["shimmer_apq3"], #line["shimmer_apq5"], line["shimmer_apq11"], 
+			#line["shimmer_loc_1"], line["shimmer_apq3_1"], line["shimmer_apq5_1"], line["shimmer_apq11_1"], 
+			#line["shimmer_loc_2"], line["shimmer_apq3_2"], line["shimmer_apq5_2"], line["shimmer_apq11_2"],
+			#line["shimmer_loc_3"], line["shimmer_apq3_3"], line["shimmer_apq5_3"], line["shimmer_apq11_3"],
 			line["hnr"], line["hnr_1"], line["hnr_2"], line["hnr_3"], 
-			line["energy"],line["energy_1"],line["energy_2"], line["energy_3"], 
-			line["F0"], line["F0_1"], line["F0_2"], line["F0_3"]]
+			#line["rms"], 
+			line["F0"], line["F0_1"], line["F0_2"], line["F0_3"], line["f1"], line["f2"]]
 	return features, label
 
 # Returns confusion matrix
@@ -86,6 +97,7 @@ def plot_confusion_matrix(cm, classes,
 # Writes only lines that have B M C as phonation and aren't stopwords
 # Calls pickFeatures to add only specific features to the list
 def getData(filename, stopWords):
+	udef = 0
 	dataPoints = []
 	phonationLabs = ["B", "C", "M"] # Use line below to test precision and recall
 	#phonationLabs = ["C", "M"]
@@ -93,17 +105,54 @@ def getData(filename, stopWords):
 		reader = csv.DictReader(f)
 		for line in reader:
 			if line["phonation"] in phonationLabs and line["word_label"] not in stopWords:
+				if line["jitter_loc"] == "--undefined--":
+					udef += 1
+				# To collapse breathy and creaky into non-modal
+				#if line["phonation"] == "B" or line["phonation"] == "C":
+				#	line["phonation"] = "N"
+				#	print(line["phonation"])
 				dataPoints.append(pickFeatures(line))
+	print(udef)
 	return dataPoints
 
-# Inputs should be path for stop list and path for data
-def parseArgs():
-	parser = argparse.ArgumentParser()
-	parser.add_argument("stoplist")
-	parser.add_argument("data")
-	return parser.parse_args()
+# Rename two headers
+# Remove anything but B M C
+# Return data set
+def prepVS(filename):
+	data = []
+	phonationLabs = ["B", "C", "M"]
+	with open(filename) as f:
+		reader = csv.DictReader(f)
+		header = next(reader)
+		header[0] = "gridfile"
+		for line in reader:
+			if line["Label"] in phonationLabs:
+				data.append(line)
+	VSData = np.array(data)
+	return VSData
 
-# take the data that will go in the model plus the speaker id
+# Remove anything but B M C
+# Return data set
+def prepPraat(filename):
+	data = []
+	phonationLabs = ["B", "C", "M"]
+	with open(filename) as f:
+		reader = csv.DictReader(f)
+		for line in reader:
+			if line["phonation"] in phonationLabs:
+				data.append(line)
+	praatData = np.array(data)
+	return praatData
+
+# Combines Praat and VS data
+# At this point, 0 and 1 have been removed but stop words have not
+def combineData(praat, VS):
+	data = np.concatenate((praat, VS), axis = 0)
+	#print(data)
+	return data
+	
+
+# take the data that will go in the model plus the speaker id (a list of lists)
 # znormalize all features within speaker
 # go through all the data and make speaker specific lists
 # key = speaker; value = list of tuple of features + label
@@ -134,15 +183,20 @@ def zNorm(data):
 def prfs(trainy, predictedy):
 	y_true = np.array(trainy)
 	y_pred = np.array(predictedy)
-	return precision_recall_fscore_support(y_true, y_pred, average='macro')
+	return precision_recall_fscore_support(y_true, y_pred, average='weighted')
 
 def main():
 	args = parseArgs()
 	stopWords = makeList(args.stoplist)
-	dataPoints = getData(args.data, stopWords)
+	dataPoints = getData(args.praat, stopWords)
+	
+
+	VSData = prepVS(args.VS)
+	praatData = prepPraat(args.praat)
+	data = combineData(praatData, VSData)
+	print(dataPoints)
+	print("------------------")
 	zNorm(dataPoints)
-	#stopWords = makeList("/Users/Laura/Desktop/Dissertation/test-data/phonetic_stoplist.txt")
-	#dataPoints = getData("/Users/Laura/Desktop/Dissertation/test-data/results.txt", stopWords)
 	random.shuffle(dataPoints)
 	trainx, trainy = zip(*dataPoints)
 	#clf = svm.SVC(kernel = 'rbf', C = .1, gamma = 0.001)
@@ -155,7 +209,7 @@ def main():
 	p, r, f, s = prfs(trainy, predictedy)
 	print("Precision: ", p)   
 	print("Recall: ", r)
-	print("F-score: ", f)      
+	print("F-score: ", f)     
 	plt.figure()
 	plot_confusion_matrix(cnf_matrix, classes = ["B", "M", "C"], title = 'Confusion Matrix')
 	plt.show()

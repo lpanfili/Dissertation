@@ -35,15 +35,15 @@ def draw():
 	plt.scatter(time, strF0, marker = 'o', color = [1,0,0,.4], label = 'STRAIGHT F0')
 	plt.scatter(time, sF0, marker = 'o', color = [0,1,0,.3], label = 'Snack F0')
 	plt.axis([0, 140, 0, 300])
-	plt.xlabel('Time (ms)', fontsize = 20)
-	plt.ylabel('Hz', fontsize = 20)
-	plt.title('Modal Pitch Track', fontsize = 30)
+	plt.xlabel('Time (ms)', fontsize = 25)
+	plt.ylabel('Hz', fontsize = 25)
+	plt.title('Breathy Pitch Tracks', fontsize = 35)
 	#plt.legend(fontsize = 12)
 	plt.show()
 def main():
-	readData("/Users/Laura/Desktop/Dissertation/Code/modal-F0.csv")
+	readData("/Users/Laura/Desktop/Dissertation/Code/breathy-F0.csv")
 	draw()
-	plt.savefig('/Users/Laura/Desktop/')
+	#plt.savefig('/Users/Laura/Desktop/')
 
 if __name__ == "__main__":
     main()

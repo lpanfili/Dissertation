@@ -1,12 +1,11 @@
 # Given an almost-complete data set, calculates and adds VoPT
-# Also prints preceding and surrounding phones so I have the list
 
 import csv
 import numpy as np
 import itertools
 
-w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/gujarati/guj-all.csv", "w"))
-with open("/Users/Laura/Desktop/Dissertation/data/gujarati/guj-all0.csv") as f:
+w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/english/eng-all.csv", "w"))
+with open("/Users/Laura/Desktop/Dissertation/data/english/eng-all0.csv") as f:
 	reader = csv.reader(f)
 	header = next(reader)
 	newheader = header
@@ -27,3 +26,9 @@ with open("/Users/Laura/Desktop/Dissertation/data/gujarati/guj-all0.csv") as f:
 			VoPT += diff
 		line.insert(119, VoPT)
 		w.writerow(line)
+
+for i in range(len(newheader)):
+	if newheader[i] == "preceding_phone":
+		print("Pre", i)
+	if newheader[i] == "following_phone":
+		print("Fol", i)

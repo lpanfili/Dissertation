@@ -16,6 +16,7 @@ import pandas as pd
 import sys
 import itertools
 from statsmodels.tools import tools
+import ARPABETconversion as arpa
 
 # Set font for plots to use CM from LaTeX
 def setFont():
