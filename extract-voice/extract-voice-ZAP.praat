@@ -16,9 +16,8 @@
 # Form to set directories
 form Directories
 	comment Enter directory with TextGrids:
-	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-guj
-	#sentence Textgrid_directory /home2/lpanfili/dissertation/ATAROS
-	
+	#sentence Textgrid_directory /Users/Laura/Desktop/test-zap
+	sentence Textgrid_directory /home2/lpanfili/dissertation/Zapotec/Zapotec_Praat/
 	
 	comment Enter name of results file:
 	sentence Results_name results.txt
@@ -62,7 +61,7 @@ else
 endif
 
 # Find number of text grids in the specified directory
-Create Strings as file list... gridlist 'textgrid_directory$'*.textgrid
+Create Strings as file list... gridlist 'textgrid_directory$'*.TextGrid
 numberoffiles = Get number of strings
 
 # Print initial report
