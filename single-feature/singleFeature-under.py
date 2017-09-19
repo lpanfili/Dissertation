@@ -45,7 +45,7 @@ def fillNaOrZero(x):
         return x.fillna(0)
 
 def runClass(x, y):
-    clf = svm.SVC()
+    clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     rus = RandomUnderSampler(random_state=42)
     x = x.as_matrix()
