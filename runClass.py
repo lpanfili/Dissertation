@@ -1,7 +1,4 @@
-# For one language
-# RESAMPLES data using SMOTE
-# Normalizes features (some by speaker)
-# Runs a single-feature model for each
+# Runs a classifier based on all features indicated in a metadata spreadsheet
 
 import pandas as pd
 import numpy as np
@@ -14,6 +11,7 @@ import argparse
 from imblearn.over_sampling import SMOTE
 from collections import Counter
 import csv
+
 
 # Arguments
 # 1. CSV with data
@@ -63,6 +61,7 @@ def fillNaOrZero(x):
     else: # If it's NaN
         return x.fillna(0)
 
+# DOES NOT RESAMPLE
 def runClass(x, y, features):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
@@ -81,17 +80,51 @@ def runClass(x, y, features):
         x_test = pd.DataFrame(x_test)
         x_train = x_train.groupby(y_train).transform(fillNaOrZero)
         x_test = x_test.groupby(y_test).transform(fillNaOrZero)
-        """
-        # Resample (twice because there are three classes)
-        x_res, y_res = sm.fit_sample(x_train, y_train)
-        x_res, y_res = sm.fit_sample(x_res, y_res)
-        """
         # Fit classifier
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
-    confmat = confusion_matrix(y_test_all, y_pred_all)
+    #confmat = confusion_matrix(y_test_all, y_pred_all)
+    #print(classification_report(y_test_all, y_pred_all))
+    acc = accuracy_score(y_test_all, y_pred_all)
+    acc = round((acc * 100),3)
+    # Feature weights
+    for x in clf.coef_:
+        print(clf.coef_)
+        feat_weights = zip(features, x)
+        print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
+    return acc
+
+"""
+# RESAMPLES
+def runClass(x, y, features):
+    clf = svm.SVC(kernel = 'linear')
+    skf = StratifiedKFold(n_splits=5)
+    sm = SMOTE(random_state=42)
+    x = x.as_matrix()
+    y = np.array(y)
+    y_pred_all = np.array([])
+    y_test_all = np.array([])
+    accuracyList = []
+    # Indented block happens within the fold
+    for train_index, test_index in skf.split(x,y):
+        x_train, x_test = x[train_index], x[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        # Replace undefined
+        x_train = pd.DataFrame(x_train)
+        x_test = pd.DataFrame(x_test)
+        x_train = x_train.groupby(y_train).transform(fillNaOrZero)
+        x_test = x_test.groupby(y_test).transform(fillNaOrZero)
+        # Resample (twice because there are three classes)
+        x_res, y_res = sm.fit_sample(x_train, y_train)
+        x_res, y_res = sm.fit_sample(x_res, y_res)
+        # Fit classifier
+        clf.fit(x_res, y_res)
+        y_pred = clf.predict(x_test)
+        y_pred_all = np.append(y_pred_all, y_pred)
+        y_test_all = np.append(y_test_all, y_test)
+    #confmat = confusion_matrix(y_test_all, y_pred_all)
     print(classification_report(y_test_all, y_pred_all))
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
@@ -99,43 +132,53 @@ def runClass(x, y, features):
     for x in clf.coef_:
         feat_weights = zip(features, x)
         print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-    return acc
-"""
-# IF RESAMPLED
-        clf.fit(x_res, y_res)
-        y_pred = clf.predict(x_test)
-        y_pred_all = np.append(y_pred_all, y_pred)
-        y_test_all = np.append(y_test_all, y_test)
-    acc = accuracy_score(y_test_all, y_pred_all)
-    acc = round((acc * 100),3)
-    print(clf.coef_)
+    #print(clf.coef_)
     return acc
 """
 
 def main():
     args = parse_args()
     features, BY_SPEAKER, NO_NORMALIZE, TO_NORMALIZE = getFeatures(args.features_csv, args.lg)
-    # Replace undefined and 0 with na
+    # Replace undefined and 0 with NA
     data = pd.read_csv(args.input_csv, na_values=["--undefined--",0])
+    """
     # Convert phonation type into three binary features
     data['modal'] = data.apply(lambda row: int(row['phonation'] == 'M'), axis = 1)
     data['creaky'] = data.apply(lambda row: int(row['phonation'] == 'C'), axis = 1)
     data['breathy'] = data.apply(lambda row: int(row['phonation'] == 'B'), axis = 1)
-    # Output correlation matrices
-    data.corr()['modal'].to_csv('/Users/Laura/Desktop/corrM.csv')
-    data.corr()['creaky'].to_csv('/Users/Laura/Desktop/corrC.csv')
-    data.corr()['breathy'].to_csv('/Users/Laura/Desktop/corrB.csv')
+    # Make individual correlation matrices
+    mCorr = data.corr()['modal']
+    bCorr = data.corr()['breathy']
+    cCorr = data.corr()['creaky']
+    # Combine them and save it
+    corrMat = pd.concat([bCorr, mCorr, cCorr], axis = 1)
+    corrMat.to_csv('/Users/Laura/Desktop/correlationMatrix.csv')
+    """
     # Define z-score
     zscore = lambda x: (x - x.mean())/x.std()
     # Normalize some by speaker
     normalized_by_speaker = data[BY_SPEAKER+["speaker"]].groupby("speaker").transform(zscore)
-    # Normalize the rest over all the data
+    # Normalize some overall
     normalized = zscore(data[TO_NORMALIZE])
+    # The features that won't be normalized
     notnormalized = data[NO_NORMALIZE]
-    # List of phonation
+    # List of phonation types
     y = data['phonation'].tolist()
-    # Clumps together normalized by speaker and normalized overall
+    # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
+    # Makes dummy df with phonation back as a column
+    normalizedP = pd.concat([normalized, data['phonation']], axis=1)
+    # Convert phonation type into three binary features
+    normalizedP['modal'] = normalizedP.apply(lambda row: int(row['phonation'] == 'M'), axis = 1)
+    normalizedP['creaky'] = normalizedP.apply(lambda row: int(row['phonation'] == 'C'), axis = 1)
+    normalizedP['breathy'] = normalizedP.apply(lambda row: int(row['phonation'] == 'B'), axis = 1)
+    # Make individual correlation matrices
+    mCorr = normalizedP.corr()['modal']
+    bCorr = normalizedP.corr()['breathy']
+    cCorr = normalizedP.corr()['creaky']
+    # Combine them and save it
+    corrMat = pd.concat([bCorr, mCorr, cCorr], axis = 1)
+    corrMat.to_csv('/Users/Laura/Desktop/correlationMatrixNorm.csv')
     """
     # Calculating the percent undefined
     udefcount = []
