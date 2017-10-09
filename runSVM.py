@@ -1,6 +1,7 @@
 # Runs an SVM based on all features indicated in a metadata spreadsheet
 # Can be resampled or not
 # Outputs accuracy and by-class prf
+# Outputs feature weights
 
 import pandas as pd
 import numpy as np
@@ -64,7 +65,7 @@ def fillNaOrZero(x):
         return x.fillna(0)
 
 # DOES NOT RESAMPLE
-def runClassImb(x, y, features):
+def runClassImb(x, y, features,lg):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -92,11 +93,11 @@ def runClassImb(x, y, features):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    getWeights(clf.coef_, features, 'imb')
+    getWeights(clf.coef_, features, 'imb', lg)
     return report, acc
 
 # RESAMPLES
-def runClassRS(x, y, features):
+def runClassRS(x, y, features,lg):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -127,17 +128,17 @@ def runClassRS(x, y, features):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    getWeights(clf.coef_, features, 'rs')
+    getWeights(clf.coef_, features, 'rs', lg)
     return report, acc
 
-def getWeights(coef, features, samp):
+def getWeights(coef, features, samp, lg):
     b = coef[0]
     bWeights = list(zip(features,b))
     weights = pd.DataFrame(bWeights, columns = ['feat', 'b-weight'])
     weights = weights.set_index('feat')
     weights['c-weight'] = coef[1]
     weights['m-weight'] = coef[2]
-    path = "/Users/Laura/Desktop/Dissertation/data/weights/SVM-" + samp + ".csv"
+    path = "/Users/Laura/Desktop/Dissertation/data/weights/SVM-" + lg + "-" + samp + ".csv"
     weights.to_csv(path)
 
 def classifaction_report(report, lg):
@@ -205,8 +206,8 @@ def main():
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
     x = normalized[features]
-    #report, acc = runClassImb(x,y,features)
-    report, acc = runClassRS(x,y,features)
+    report, acc = runClassImb(x,y,features,args.lg)
+    #report, acc = runClassRS(x,y,features,args.lg)
     # Print prf in LaTeX-friendly format
     #classifaction_report(report, args.lg)
     #print('accuracy', acc)
