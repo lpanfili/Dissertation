@@ -65,7 +65,7 @@ def fillNaOrZero(x):
 
 
 # DOES NOT RESAMPLE
-def runClass(x, y, features):
+def runClassImb(x, y, features, lg, feat_csv):
     # No max on the number of features
     # 50 trees
     # min of 50 samples per leaf
@@ -74,12 +74,6 @@ def runClass(x, y, features):
     clf = RandomForestClassifier()
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
-    mini = x.min()
-    print("MIN", mini.min())
-    #min.to_csv("/Users/Laura/Desktop/min.csv")
-    maxi = x.max()
-    print("MAX", maxi.max())
-    #max.to_csv("/Users/Laura/Desktop/max.csv")
     x = x.as_matrix()
     y = np.array(y)
     y_pred_all = np.array([])
@@ -104,21 +98,11 @@ def runClass(x, y, features):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    #for x in clf.coef_:
-        #print(clf.coef_)
-        #print(type(clf.coef_))
-        #feat_weights = list(zip(features, x))
-        #print(feat_weights)
-        #a,b,c = pd.DataFrame(feat_weights)
-        #feat_weights = pd.concat([a,b,c], axis = 1)
-        #print(type(feat_weights))
-        #print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-        #print(feat_weights)
+    getWeights(clf.feature_importances_, features, 'imb', lg, feat_csv)
     return report, acc
 
-"""
 # RESAMPLES
-def runClass(x, y, features):
+def runClassRS(x, y, features, lg, feat_csv):
     clf = RandomForestClassifier()
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -153,12 +137,19 @@ def runClass(x, y, features):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    #for x in clf.coef_:
-    #    feat_weights = zip(features, x)
-    #    print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-    #print(clf.coef_)
+    getWeights(clf.feature_importances_, features, 'rs', lg, feat_csv)
     return report, acc
-"""
+
+
+def getWeights(coef, features, samp, lg, feat_csv):
+    weights = list(zip(features,coef))
+    weights = pd.DataFrame(weights, columns = ['feat', 'weight'])
+    weights = weights.set_index('feat')
+    metadata = pd.read_csv(feat_csv, index_col='feature')
+    weights['latex-feat'] = metadata['feature-latex']
+    weights = weights.set_index('latex-feat')
+    path = "/Users/Laura/Desktop/Dissertation/data/weights/RF-" + lg + "-" + samp + ".csv"
+    weights.to_csv(path)
 
 def classifaction_report_csv(report, lg):
     report_data = []
@@ -225,9 +216,10 @@ def main():
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
     x = normalized[features]
-    report, acc = runClass(x,y,features)
-    classifaction_report_csv(report, args.lg)
-    print('accuracy', acc)
+    report, acc = runClassImb(x,y,features, args.lg, args.features_csv)
+    report, acc = runClassRS(x,y,features, args.lg, args.features_csv)
+    #classifaction_report_csv(report, args.lg)
+    #print('accuracy', acc)
 
 if __name__ == "__main__":
     main()

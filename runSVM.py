@@ -65,7 +65,7 @@ def fillNaOrZero(x):
         return x.fillna(0)
 
 # DOES NOT RESAMPLE
-def runClassImb(x, y, features,lg):
+def runClassImb(x, y, features,lg, feat_csv):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -93,11 +93,11 @@ def runClassImb(x, y, features,lg):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    getWeights(clf.coef_, features, 'imb', lg)
+    getWeights(clf.coef_, features, 'imb', lg, feat_csv)
     return report, acc
 
 # RESAMPLES
-def runClassRS(x, y, features,lg):
+def runClassRS(x, y, features,lg, feat_csv):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -128,17 +128,33 @@ def runClassRS(x, y, features,lg):
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
     # Feature weights
-    getWeights(clf.coef_, features, 'rs', lg)
+    getWeights(clf.coef_, features, 'rs', lg, feat_csv)
     return report, acc
 
-def getWeights(coef, features, samp, lg):
-    b = coef[0]
-    bWeights = list(zip(features,b))
-    weights = pd.DataFrame(bWeights, columns = ['feat', 'b-weight'])
-    weights = weights.set_index('feat')
-    weights['c-weight'] = coef[1]
-    weights['m-weight'] = coef[2]
+def getWeights(coef, features, samp, lg, feat_csv):
+    if lg == 'cmn':
+        CvM = coef[0]
+        CvMWeights = list(zip(features,CvM))
+        weights = pd.DataFrame(CvMWeights, columns = ['feat', 'CM'])
+        weights = weights.set_index('feat')
+    elif lg == 'guj':
+        BvM = coef[0]
+        BvMWeights = list(zip(features,BvM))
+        weights = pd.DataFrame(BvMWeights, columns = ['feat', 'BM'])
+        weights = weights.set_index('feat')
+    else:
+        BvC = coef[0]
+        BvM = coef[1]
+        CvM = coef[2]
+        BvCWeights = list(zip(features,BvC))
+        weights = pd.DataFrame(BvCWeights, columns = ['feat', 'BC'])
+        weights = weights.set_index('feat')
+        weights['BM'] = BvM
+        weights['CM'] = CvM
     path = "/Users/Laura/Desktop/Dissertation/data/weights/SVM-" + lg + "-" + samp + ".csv"
+    metadata = pd.read_csv(feat_csv, index_col='feature')
+    weights['latex-feat'] = metadata['feature-latex']
+    weights = weights.set_index('latex-feat')
     weights.to_csv(path)
 
 def classifaction_report(report, lg):
@@ -206,8 +222,8 @@ def main():
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
     x = normalized[features]
-    report, acc = runClassImb(x,y,features,args.lg)
-    #report, acc = runClassRS(x,y,features,args.lg)
+    report, acc = runClassImb(x,y,features,args.lg, args.features_csv)
+    report, acc = runClassRS(x,y,features,args.lg, args.features_csv)
     # Print prf in LaTeX-friendly format
     #classifaction_report(report, args.lg)
     #print('accuracy', acc)
