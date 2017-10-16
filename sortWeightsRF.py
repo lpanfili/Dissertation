@@ -21,6 +21,7 @@ def getTop(data, top, type, lg):
 	
 	weights = pd.read_csv(data)
 	weights = weights.set_index('latex-feat')
+	weights = weights.round(decimals = 3)
 	weights['abs'] = weights['weight'].abs()
 	weights = weights.sort_values(by = 'abs', ascending = False)
 	#print(weights)
