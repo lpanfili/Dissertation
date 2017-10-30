@@ -62,7 +62,7 @@ def main():
 	SVMweights = sortSVM(SVMpath, args.lg)
 	RFWeights = sortRF(RFpath, args.lg)
 	weights = pd.concat([SVMweights, RFWeights], axis = 1)
-	path = "/Users/Laura/Desktop/Dissertation/data/weights/sortedWeights-" + args.lg + "_" + args.datatype + ".csv"
+	path = "/Users/Laura/Desktop/Dissertation/data/weights/sortedWeights-" + args.lg + "-" + args.datatype + ".csv"
 	weights.to_csv(path)
 
 if __name__ == "__main__":
