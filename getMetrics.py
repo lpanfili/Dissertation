@@ -425,6 +425,24 @@ def make_feature_dict(features_csv):
             feature_dict[feature] = latex_feature
     return feature_dict
 
+
+def ablation_list(feature_importance, lg):
+    cmn_index = [4,6,8]
+    guj_index = [2,6,8]
+    others_index = [0,2,4,6,8,10,12]
+    to_ablate = []
+    if lg == 'cmn':
+        index_list = cmn_index
+    elif lg == 'guj':
+        index_list = guj_index
+    else:
+        index_list = others_index
+    for i in index_list:
+        for j in feature_importance[[i]].values.tolist():
+            to_ablate.append(j[0])
+    return to_ablate
+
+
 def main():
     args = parse_args()
     path = "../data/lgs/" + args.lg + "/" + args.lg
@@ -455,6 +473,9 @@ def main():
     importance_sorted = sort_importance(RF_rs_importance, 10)
     feature_importance = pd.concat([corr_sorted, weights_sorted, importance_sorted], axis = 1)
     feature_importance.to_csv(path + "-topvals.csv")
+    # Make and print a list of the top features to ablate
+    to_ablate = ablation_list(feature_importance, args.lg)
+    print(to_ablate)
 
 if __name__ == "__main__":
     main()
