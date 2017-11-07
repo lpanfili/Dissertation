@@ -18,6 +18,7 @@ import re
 # Arguments:
 # 1. CSV with features metadata
 # 2. 3-letter language code
+# 3. A comma-separated list of features to ablate
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('features_csv', type=str,
@@ -241,9 +242,9 @@ def main():
         # Remove feature from x
         x_abl = x.drop([feat], axis = 1, inplace = False)
         # Run SVM and RF
-        SVM_rs_aprf = SVM_rs(x, y, features, args.lg)
+        SVM_rs_aprf = SVM_rs(x_abl, y, features, args.lg)
         SVM_rs_aprf.insert(0, feat)
-        RF_rs_aprf = RF_rs(x, y, features, args.lg)
+        RF_rs_aprf = RF_rs(x_abl, y, features, args.lg)
         RF_rs_aprf.insert(0, feat)
         svm.append(SVM_rs_aprf)
         rf.append(RF_rs_aprf)
