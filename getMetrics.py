@@ -261,6 +261,7 @@ def get_weights(coef, features, lg):
         weights = weights.set_index('feat')
         weights['BM-weight'] = BvM
         weights['CM-weight'] = CvM
+    weights = weights.round(decimals = 3)
     return weights
 
 
@@ -395,7 +396,7 @@ def sort_weights(weights, x, lg):
         weights = weights.sort_values(by = 'CMabs', ascending = False)
         CM = weights[['CM-weight']].copy().reset_index()
         weights = pd.concat([BC, BM, CM], axis=1)
-    weights = weights.round(decimals = 3)
+    #weights = weights.round(decimals = 3)
     top = weights.head(n = x)
     return top
 
@@ -426,6 +427,8 @@ def make_feature_dict(features_csv):
     return feature_dict
 
 
+# Makes a list of the top features
+# For later use in ablation
 def ablation_list(feature_importance, lg):
     cmn_index = [4,6,8]
     guj_index = [2,6,8]
