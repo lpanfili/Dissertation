@@ -50,7 +50,7 @@ print find results at 'results_file$''newline$'
 #-------------------------------------------------------------------------#
 # Initialize results file
 
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	phonation	jitter_ddp_mean	jitter_ddp_1	jitter_ddp_2	jitter_ddp_3	jitter_loc_mean	jitter_loc_1	jitter_loc_2	jitter_loc_3	jitter_loc_abs_mean	jitter_loc_abs_1	jitter_loc_abs_2	jitter_loc_abs_3	jitter_rap_mean	jitter_rap_1	jitter_rap_2	jitter_rap_3	jitter_ppq5_mean	jitter_ppq5_1	jitter_ppq5_2	jitter_ppq5_3	shimmer_loc_mean	shimmer_loc_1	shimmer_loc_2	shimmer_loc_3	shimmer_local_dB_mean	shimmer_loc_db_1	shimmer_loc_db_2	shimmer_loc_db_3	shimmer_apq3_mean	shimmer_apq3_1	shimmer_apq3_2	shimmer_apq3_3	shimmer_apq5_mean	shimmer_apq5_1	shimmer_apq5_2	shimmer_apq5_3	shimmer_apq11_mean	shimmer_apq11_1	shimmer_apq11_2	shimmer_apq11_3'newline$'"
+results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	phonation	jitter_loc_mean	jitter_loc_1	jitter_loc_2	jitter_loc_3	jitter_loc_abs_mean	jitter_loc_abs_1	jitter_loc_abs_2	jitter_loc_abs_3	jitter_rap_mean	jitter_rap_1	jitter_rap_2	jitter_rap_3	jitter_ppq5_mean	jitter_ppq5_1	jitter_ppq5_2	jitter_ppq5_3	shimmer_loc_mean	shimmer_loc_1	shimmer_loc_2	shimmer_loc_3	shimmer_local_dB_mean	shimmer_loc_db_1	shimmer_loc_db_2	shimmer_loc_db_3	shimmer_apq3_mean	shimmer_apq3_1	shimmer_apq3_2	shimmer_apq3_3	shimmer_apq5_mean	shimmer_apq5_1	shimmer_apq5_2	shimmer_apq5_3	shimmer_apq11_mean	shimmer_apq11_1	shimmer_apq11_2	shimmer_apq11_3'newline$'"
 
 #-------------------------------------------------------------------------#
 # Check if the results file already exists
@@ -136,7 +136,7 @@ for ifile to numberoffiles
 
 			# Output
 
-			results_line$ = "'gridfile$'	'start:3'	'end:3'	'duration:3'	'vowel_label$'	'phonation_label$'	'jitter_ddp_mean:6'	'jitter_ddp_1:6'	'jitter_ddp_2:6'	'jitter_ddp_3:6'	'jitter_loc_mean:6'	'jitter_loc_1:6'	'jitter_loc_2:6'	'jitter_loc_3:6'	'jitter_loc_abs_mean:6'	'jitter_loc_abs_1:6'	'jitter_loc_abs_2:6'	'jitter_loc_abs_3:6'	'jitter_rap_mean:6'	'jitter_rap_1:6'	'jitter_rap_2:6'	'jitter_rap_3:6'	'jitter_ppq5_mean:6'	'jitter_ppq5_1:6'	'jitter_ppq5_2:6'	'jitter_ppq5_3:6'	'shimmer_loc_mean:6'	'shimmer_loc_1:6'	'shimmer_loc_2:6'	'shimmer_loc_3:6'	'shimmer_loc_db_mean:6'	'shimmer_loc_db_1:6'	'shimmer_loc_db_2:6'	'shimmer_loc_db_3:6'	'shimmer_apq3_mean:6'	'shimmer_apq3_1:6'	'shimmer_apq3_2:6'	'shimmer_apq3_3:6'	'shimmer_apq5_mean:6'	'shimmer_apq5_1:6'	'shimmer_apq5_2:6'	'shimmer_apq5_3:6'	'shimmer_apq11_mean:6'	'shimmer_apq11_1:6'	'shimmer_apq11_2:6'	'shimmer_apq11_3:6''newline$'"
+			results_line$ = "'gridfile$'	'start:6'	'end:6'	'duration:3'	'vowel_label$'	'phonation_label$'	'jitter_loc_mean:6'	'jitter_loc_1:6'	'jitter_loc_2:6'	'jitter_loc_3:6'	'jitter_loc_abs_mean:6'	'jitter_loc_abs_1:6'	'jitter_loc_abs_2:6'	'jitter_loc_abs_3:6'	'jitter_rap_mean:6'	'jitter_rap_1:6'	'jitter_rap_2:6'	'jitter_rap_3:6'	'jitter_ppq5_mean:6'	'jitter_ppq5_1:6'	'jitter_ppq5_2:6'	'jitter_ppq5_3:6'	'shimmer_loc_mean:6'	'shimmer_loc_1:6'	'shimmer_loc_2:6'	'shimmer_loc_3:6'	'shimmer_loc_db_mean:6'	'shimmer_loc_db_1:6'	'shimmer_loc_db_2:6'	'shimmer_loc_db_3:6'	'shimmer_apq3_mean:6'	'shimmer_apq3_1:6'	'shimmer_apq3_2:6'	'shimmer_apq3_3:6'	'shimmer_apq5_mean:6'	'shimmer_apq5_1:6'	'shimmer_apq5_2:6'	'shimmer_apq5_3:6'	'shimmer_apq11_mean:6'	'shimmer_apq11_1:6'	'shimmer_apq11_2:6'	'shimmer_apq11_3:6''newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
@@ -155,12 +155,6 @@ print Done.
 
 procedure Jitter
 	select PointProcess 'soundname$'_'soundname$'
-
-	# ddp
-	jitter_ddp_mean = Get jitter (ddp)... start end 0.0001 0.02 1.3
-	jitter_ddp_1 = Get jitter (ddp)... start third_1 0.0001 0.02 1.3
-	jitter_ddp_2 = Get jitter (ddp)... third_1 third_2 0.0001 0.02 1.3
-	jitter_ddp_3 = Get jitter (ddp)... third_2 end 0.0001 0.02 1.3
 
 	# loc
 	jitter_loc_mean = Get jitter (local)... start end 0.0001 0.02 1.3
