@@ -29,17 +29,19 @@ def getStopWords():
 # Make and return a list of all the words in the data
 def getWords():
 	words = []
-	with open("/Users/Laura/Desktop/Dissertation/data/english/All/All-praat-1.txt") as f:
+	#with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/All/All-praat-1.txt") as f:
+	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-praat.txt") as f:
 		reader = csv.reader(f, delimiter = '\t')
 		header = next(reader)
 		for line in reader:
-			words.append(line[3])
+			words.append(line[5])
 	return words
 
 # Remove vowels with the label 0 or 1
 def remove01():
 	data = []
-	with open("/Users/Laura/Desktop/Dissertation/data/english/english-vs-1.txt") as f:
+	#with open("/Users/Laura/Desktop/Dissertation/data/english/english-vs-1.txt") as f:
+	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-vs-1.txt") as f:
 		reader = csv.reader(f, delimiter = '\t')
 		header = next(reader)
 		for line in reader:
@@ -119,8 +121,8 @@ def makePlot(speakerDict):
 		plt.boxplot(toPlot, labels = ["B", "M", "C"])
 		#plt.ylim([0,1600])
 		plt.title(speaker)
-		#plt.show()
-		plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/Dissertation/Appendices/VoPT-all/images/", speaker]), dpi = "figure")
+		plt.show()
+		#plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/Dissertation/Appendices/VoPT-all/images/", speaker]), dpi = "figure")
 		plt.clf()
 
 def main():

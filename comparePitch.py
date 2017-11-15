@@ -304,8 +304,8 @@ def plotBMC(BDiff, MDiff, CDiff, speaker, method):
 		plt.ylim([0,1800])
 
 	plt.boxplot(toPlot, labels = ["B", "M", "C"])
-	#plt.show()
-	plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method]), dpi = "figure")
+	plt.show()
+	#plt.savefig(''.join(["/Users/Laura/Desktop/Dissertation/VOPT/", speaker, "-", method]), dpi = "figure")
 	plt.clf()
 
 def plotMNM(BDiff, MDiff, CDiff, speaker, method):
@@ -322,7 +322,7 @@ def main():
 	args = parseArgs()
 	speaker = args.speaker
 	stopWords = getStopWords(args.stoplist)
-	praat = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-praat-1.txt"])
+	praat = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-praat.txt"])
 	words = getWords(praat)
 	one = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-1.txt"])
 	three = ''.join(["/Users/Laura/Desktop/Dissertation/data/english/", speaker, "/", speaker, "-vs-3.txt"])
@@ -335,8 +335,8 @@ def main():
 	meanPitchDiff(dataOne, words, stopWords)
 	#meanPitchDiff3(dataThree)
 	#meanPitchDiff10(dataTen)
-	pitchDiff3(dataBig, words, stopWords)
-	pitchDiff10(dataBig, words, stopWords)
+	#pitchDiff3(dataBig, words, stopWords)
+	#pitchDiff10(dataBig, words, stopWords)
 
 if __name__ == "__main__":
 	main()

@@ -1,8 +1,8 @@
 # Form to set directories
 form Directories
 	comment Enter directory with TextGrids:
-	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data4
-	#sentence Textgrid_directory /home2/lpanfili/dissertation/ATAROS/
+	sentence Textgrid_directory /Users/Laura/Desktop/Dissertation/test-data2
+	#sentence Textgrid_directory /home2/lpanfili/dissertation/praat/recordings
 	
 	
 	comment Enter name and location of results file:
@@ -28,9 +28,7 @@ print find results at 'results_file$''newline$'
 
 #-------------------------------------------------------------------------#
 # Initialize results file
-
-results_header$ = "gridfile	vowel_start	vowel_end	vowel_dur	vowel_label	word_label	phonation	mfcc_mean-1	mfcc_mean-2	mfcc_mean-3	mfcc_mean-4	mfcc_mean-5	mfcc_mean-6	mfcc_mean-7	mfcc_mean-8	mfcc_mean-9	mfcc_mean-10	mfcc_mean-11	mfcc_mean-12	mfcc_mean-13	mfcc_mean-14	mfcc_mean-15	mfcc_mean-16	mfcc_mean-17	mfcc_mean-18	mfcc_mean-19	mfcc_mean-20	mfcc_mean-21	mfcc_mean-22	mfcc_mean-23	mfcc_mean-24	stddv-1	stddv-2	stddv-3	stddv-4	stddv-5	stddv-6	stddv-7	stddv-8	stddv-9	stddv-10	stddv-11	stddv-12	stddv-13	stddv-14	stddv-15	stddv-16	stddv-17	stddv-18	stddv-19	stddv-20	stddv-21	stddv-22	stddv-23	stddv-24'newline$'"
-
+results_header$ = "gridfile,vowel_start,vowel_end,vowel_dur,vowel_label,word_label,phonation,jitter_loc,jitter_loc_abs,jitter_rap,jitter_ppq5,f0'newline$'"
 
 #-------------------------------------------------------------------------#
 # Check if the results file already exists
@@ -74,6 +72,17 @@ for ifile to numberoffiles
 	phone_intervals = Get number of intervals... phone_tier
 	Read from file... 'textgrid_directory$''filename$'
 
+	# Create Pitch, Point Process, Spectrum and Harmonicity objects
+	select Sound 'soundname$'
+	To Pitch... 0 minpitch maxpitch
+	select Sound 'soundname$'
+	plus Pitch 'soundname$'
+	To PointProcess (cc)
+	select Sound 'soundname$'
+	To Harmonicity (cc)... harmonicity_timestep minpitch silence_thresh periods_per_window
+	select Sound 'soundname$'
+	To Formant (burg)... 0.0 numformants maxformant 0.025 50.0
+
 	for phone_interval to phone_intervals
 		select 'gridname$'
 
@@ -82,30 +91,25 @@ for ifile to numberoffiles
 		
 		# Only look at stressed vowels (primary = 1; secondary = 2)
 		if right$(vowel_label$) = "1" or right$(vowel_label$) = "2"
-
-			# Calculate various time points
-			start = Get start point... phone_tier phone_interval
-			end = Get end point... phone_tier phone_interval
-			duration = (end - start)
-			midpoint = start + (duration / 2)
-			third = (duration / 3)
-			third_1 = (start + third)
-			third_2 = (end - third)
+			vowel_start = Get start point... phone_tier phone_interval
+			vowel_end = Get end point... phone_tier phone_interval
+			vowel_dur = (vowel_end - vowel_start)
+			vowel_midpoint = vowel_start + (vowel_dur / 2)
+			vowel_third = (vowel_dur / 3)
 
 			# Get word annotation
-			word_interval = Get interval at time... word_tier midpoint
+			word_interval = Get interval at time... word_tier vowel_midpoint
 			word_label$ = Get label of interval... word_tier word_interval
 
 			# Get phonation annotation
-			phonation_interval = Get interval at time... phonation_tier midpoint
+			phonation_interval = Get interval at time... phonation_tier vowel_midpoint
 			phonation_label$ = Get label of interval... phonation_tier phonation_interval
+			
+			# Get jitter
+			   call Jitter
 
-			# "file$" is just the name of the file (no ext or prefix)
-			file$ = replace$ (filename$, ".wav", "", 1)
-			filepart$ = file$ + "_part"
-
-			# Make MFCC
-			call makeMFCC
+			# Get F0
+				call F0
 
 			# Make blank things NA
 			if word_label$ = ""
@@ -116,78 +120,63 @@ for ifile to numberoffiles
 			endif
 			
 			# Output
-
-			results_line$ = "'gridfile$'	'start:3'	'end:3'	'duration:3'	'vowel_label$'	'word_label$'	'phonation_label$'"
-
-			# Get MFCCs
-			mfccstddv$ = ""
-			for j from 1 to 24
-				call getMFCC: j
-				results_line$ = results_line$ + "	'mfcc_mean'"
-				mfccstddv$ = mfccstddv$ + "'stddv'	"
-			endfor
-			results_line$ = results_line$ + "	" + mfccstddv$ + "'newline$'"
-			select Sound 'filepart$'
-			Remove
-			select Matrix 'filepart$'
-			Remove
-			select MFCC 'filepart$'
-			Remove
-			
+			results_line$ = "'gridfile$','vowel_start:3','vowel_end:3','vowel_dur:3','vowel_label$','word_label$','phonation_label$','jitter_loc:6','jitter_loc_abs:6','jitter_rap:6','jitter_ppq5:6','f0''newline$'"
 			fileappend "'results_file$'" 'results_line$'
 		endif
 	endfor
 		select 'gridname$'
 		Remove
 endfor
-
+	
 # Remove objects	
-#select all
-#Remove
+select all
+Remove
 
 print Done. 
 
 #-------------------------------------------------------------------------#
 # PROCEDURES 
-			
-procedure makeMFCC
-	select Sound 'soundname$'
-	Extract part... start end rectangular 1.0 no
-	To MFCC... 24 0.010 0.005 100.0 100.0 0.0  
-	# The first number is number of coefficients
-	To Matrix
-	col = Get number of columns
-endproc
 
-procedure getMFCC: coeff
-	# Gets average of one CC over the whole vowel
-	mfcc_total = 0.0
-	for i from 1 to col
-		mfcc = Get value in cell... coeff i
-		# First number is coefficient number
-		mfcc_total = mfcc + mfcc_total
-	# Gets stddv of one CC over the whole vowel at 10 ms frames
-	stddv = Get standard deviation... 0.0 col coeff-0.5 coeff+0.5
-	endfor
-	mfcc_mean = mfcc_total / col
+procedure Jitter
+	select PointProcess 'soundname$'_'soundname$'
+	# all
+	jitter_loc = Get jitter (local)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_loc_abs = Get jitter (local, absolute)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_rap = Get jitter (rap)... vowel_start vowel_end 0.0001 0.02 1.3
+	jitter_ppq5 = Get jitter (ppq5)... vowel_start vowel_end 0.0001 0.02 1.3
+endproc
+			
+procedure F0
+	select Pitch 'soundname$'
+	f0 = Get mean... vowel_start vowel_end Hertz
 endproc
 
 procedure set_parameters
 
-	minpitch = 75
-	maxpitch = 600
+  if startsWith(gridfile$, "NWF")
+	minpitch = 50
+  	maxpitch = 600
   	maxformant = 5500
+  elif startsWith(gridfile$, "NWM")
+  	minpitch = 50
+  	maxpitch = 600
+  	maxformant = 5500
+  else
+  	minpitch = 75
+  	maxpitch = 600
+  	maxformant = 5500
+  endif
   
-  	harmonicity_timestep = 0.01
-  	silence_thresh  = 0.1
- 	periods_per_window = 1
+  harmonicity_timestep = 0.01
+  silence_thresh  = 0.1
+  periods_per_window = 1
   
-  	numformants = 5
+  numformants = 5
 
-  	# Set tier numbers
-  	phone_tier = 1
- 	word_tier = 2
-  	transcription_tier = 3
-  	phonation_tier = 4
+  # Set tier numbers
+  phone_tier = 1
+  word_tier = 2
+  transcription_tier = 3
+  phonation_tier = 4
   
 endproc

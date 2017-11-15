@@ -217,9 +217,9 @@ def main():
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
     x = normalized[features]
     report, acc = runClassImb(x,y,features, args.lg, args.features_csv)
-    report, acc = runClassRS(x,y,features, args.lg, args.features_csv)
-    #classifaction_report_csv(report, args.lg)
-    #print('accuracy', acc)
+    #report, acc = runClassRS(x,y,features, args.lg, args.features_csv)
+    classifaction_report_csv(report, args.lg)
+    print('accuracy', acc)
 
 if __name__ == "__main__":
     main()

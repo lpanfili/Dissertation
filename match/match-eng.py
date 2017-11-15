@@ -15,7 +15,7 @@ with open('/Users/Laura/Desktop/Dissertation/data/phonetic_stoplist.txt') as f:
 		stopWords.append(line)
 
 # Praat file
-with open("/Users/Laura/Desktop/Dissertation/data/english/english-praat.txt") as praat:
+with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-praat-nov.txt") as praat:
 	reader = csv.reader(praat, delimiter = '\t')
 	praatheader = next(reader)
 	for line in reader:
@@ -34,7 +34,7 @@ with open("/Users/Laura/Desktop/Dissertation/data/english/english-praat.txt") as
 						praatDict[idkey] = measures
 
 # VS thirds file
-with open("/Users/Laura/Desktop/Dissertation/data/english/english-vs-3.txt") as vs3:
+with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-vs-3.txt") as vs3:
 	reader = csv.reader(vs3, delimiter = '\t')
 	vs3header = next(reader)
 	for line in reader:
@@ -91,7 +91,7 @@ for i in range(len(header)):
 		newheader.append(header[i])
 newheader.insert(0, 'speaker')
 
-w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/english/eng-all.csv", "w"))
+w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/eng-all-nov.csv", "w"))
 w.writerow(newheader)
 
 B = 0

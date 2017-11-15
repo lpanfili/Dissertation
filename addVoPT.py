@@ -4,8 +4,8 @@ import csv
 import numpy as np
 import itertools
 
-w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/english/eng-all.csv", "w"))
-with open("/Users/Laura/Desktop/Dissertation/data/english/eng-all0.csv") as f:
+w = csv.writer(open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/eng-all-nov-vopt.csv", "w"))
+with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/eng-all-nov.csv") as f:
 	reader = csv.reader(f)
 	header = next(reader)
 	newheader = header

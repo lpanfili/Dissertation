@@ -1,4 +1,6 @@
-# Runs a classifier based on all features indicated in a metadata spreadsheet
+# Takes a list of features to ablate
+# Runs an SVM for each (excluding each)
+# Based on resampled data
 # Outputs accuracy and by-class prf
 
 import pandas as pd
@@ -25,6 +27,7 @@ def parse_args():
     parser.add_argument('features_csv', type=str,
                         help='a CSV file (with header) containing the features metadata')
     parser.add_argument('lg', type=str, help='the three digit code for the language in question')
+    parser.add_argument('ablate', type=str, help='a list of the features to be ablated')
     return parser.parse_args()
 
 # Makes a list of features based on the features metadata csv
@@ -62,52 +65,8 @@ def fillNaOrZero(x):
     else: # If it's NaN
         return x.fillna(0)
 
-"""
-
-# DOES NOT RESAMPLE
-def runClass(x, y, features):
-    clf = svm.SVC(kernel = 'linear')
-    skf = StratifiedKFold(n_splits=5)
-    sm = SMOTE(random_state=42)
-    x = x.as_matrix()
-    y = np.array(y)
-    y_pred_all = np.array([])
-    y_test_all = np.array([])
-    accuracyList = []
-    # Indented block happens within the fold
-    for train_index, test_index in skf.split(x,y):
-        x_train, x_test = x[train_index], x[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        # Replace undefined
-        x_train = pd.DataFrame(x_train)
-        x_test = pd.DataFrame(x_test)
-        x_train = x_train.groupby(y_train).transform(fillNaOrZero)
-        x_test = x_test.groupby(y_test).transform(fillNaOrZero)
-        # Fit classifier
-        clf.fit(x_train, y_train)
-        y_pred = clf.predict(x_test)
-        y_pred_all = np.append(y_pred_all, y_pred)
-        y_test_all = np.append(y_test_all, y_test)
-    #confmat = confusion_matrix(y_test_all, y_pred_all)
-    report = classification_report(y_test_all, y_pred_all)
-    acc = accuracy_score(y_test_all, y_pred_all)
-    acc = round((acc * 100),3)
-    # Feature weights
-    for x in clf.coef_:
-        #print(clf.coef_)
-        #print(type(clf.coef_))
-        feat_weights = list(zip(features, x))
-        #print(feat_weights)
-        #a,b,c = pd.DataFrame(feat_weights)
-        #feat_weights = pd.concat([a,b,c], axis = 1)
-        #print(type(feat_weights))
-        #print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-        #print(feat_weights)
-    return report, acc
-
-"""
 # RESAMPLES
-def runClass(x, y, features):
+def runClassRS(x, y, features,lg, feat_csv):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
     sm = SMOTE(random_state=42)
@@ -137,14 +96,9 @@ def runClass(x, y, features):
     report = classification_report(y_test_all, y_pred_all)
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
-    # Feature weights
-    #for x in clf.coef_:
-    #    feat_weights = zip(features, x)
-    #    print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-    #print(clf.coef_)
     return report, acc
 
-def classifaction_report_csv(report, lg):
+def classifaction_report(report, lg):
     report_data = []
     lines = report.split('\n')
     if lg == 'cmn':
@@ -191,16 +145,18 @@ def classifaction_report_csv(report, lg):
         prf = bP + "&" + mP + "&" + cP + "&" + bR + "&" + mR + "&" + cR + "&" + bF + "&" + mF + "&" + cF
     print(prf)
 
+
 def main():
     args = parse_args()
+    to_ablate = args.ablate.split(", ")
     features, BY_SPEAKER, NO_NORMALIZE, TO_NORMALIZE = getFeatures(args.features_csv, args.lg)
     # Replace undefined and 0 with NA
     data = pd.read_csv(args.input_csv, na_values=["--undefined--",0])
     # Define z-score
     zscore = lambda x: (x - x.mean())/x.std()
-    # Normalize some by speaker
+    # Normalize some features by speaker
     normalized_by_speaker = data[BY_SPEAKER+["speaker"]].groupby("speaker").transform(zscore)
-    # Normalize some overall
+    # Normalize some features overall
     normalized = zscore(data[TO_NORMALIZE])
     # The features that won't be normalized
     notnormalized = data[NO_NORMALIZE]
@@ -208,10 +164,19 @@ def main():
     y = data['phonation'].tolist()
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
-    x = normalized[features]
-    report, acc = runClass(x,y,features)
-    classifaction_report_csv(report, args.lg)
-    print('accuracy', acc)
+    #normalized['latex-feat'] = metadata['feature-latex']
+    acc_list = []
+    # Loop through features to be ablated and remove them, then run SVM
+    for feat in to_ablate: 
+        dropped = normalized.drop([feat], axis = 1, inplace = False)
+        features_dropped = features
+        features_dropped.remove(feat)
+        x = dropped[features_dropped]
+        report, acc = runClassRS(x, y, features,args.lg, args.features_csv)
+        acc_list.append(feat + ' ACC: ' + str(acc))
+
+    for i in acc_list:
+        print(i)
 
 if __name__ == "__main__":
     main()

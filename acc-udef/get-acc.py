@@ -1,5 +1,4 @@
-# Runs a classifier based on all features indicated in a metadata spreadsheet
-# Outputs accuracy and by-class prf
+# GETS SINGLE FEATURE ACCURACY
 
 import pandas as pd
 import numpy as np
@@ -12,7 +11,6 @@ import argparse
 from imblearn.over_sampling import SMOTE
 from collections import Counter
 import csv
-import re
 
 # Arguments
 # 1. CSV with data
@@ -44,14 +42,13 @@ def getFeatures(features_csv, lg):
         # Pick only features marked as 1 and with < 15% udef
         for line in reader:
             if line[lgIndex] == '1':
-                if float(line[lgIndex + 1]) < 15.0:
-                    features.append(line[0])
-                    if line[1] == '1':
-                        NO_NORMALIZE.append(line[0])
-                    if line[2] == '1':
-                        BY_SPEAKER.append(line[0])
-                    if line[1] == "0" and line[2] == "0":
-                        TO_NORMALIZE.append(line[0])
+                features.append(line[0])
+                if line[1] == '1':
+                    NO_NORMALIZE.append(line[0])
+                if line[2] == '1':
+                    BY_SPEAKER.append(line[0])
+                if line[1] == "0" and line[2] == "0":
+                    TO_NORMALIZE.append(line[0])
     return features, BY_SPEAKER, NO_NORMALIZE, TO_NORMALIZE
 
 # Replaces undefineds and zeros with the mean
@@ -62,9 +59,8 @@ def fillNaOrZero(x):
     else: # If it's NaN
         return x.fillna(0)
 
-"""
-
 # DOES NOT RESAMPLE
+"""
 def runClass(x, y, features):
     clf = svm.SVC(kernel = 'linear')
     skf = StratifiedKFold(n_splits=5)
@@ -89,23 +85,13 @@ def runClass(x, y, features):
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
     #confmat = confusion_matrix(y_test_all, y_pred_all)
-    report = classification_report(y_test_all, y_pred_all)
+    #print(classification_report(y_test_all, y_pred_all))
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
-    # Feature weights
-    for x in clf.coef_:
-        #print(clf.coef_)
-        #print(type(clf.coef_))
-        feat_weights = list(zip(features, x))
-        #print(feat_weights)
-        #a,b,c = pd.DataFrame(feat_weights)
-        #feat_weights = pd.concat([a,b,c], axis = 1)
-        #print(type(feat_weights))
-        #print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-        #print(feat_weights)
-    return report, acc
-
+    return acc
 """
+
+
 # RESAMPLES
 def runClass(x, y, features):
     clf = svm.SVC(kernel = 'linear')
@@ -133,64 +119,12 @@ def runClass(x, y, features):
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
-    #confmat = confusion_matrix(y_test_all, y_pred_all)
-    report = classification_report(y_test_all, y_pred_all)
     acc = accuracy_score(y_test_all, y_pred_all)
     acc = round((acc * 100),3)
-    # Feature weights
-    #for x in clf.coef_:
-    #    feat_weights = zip(features, x)
-    #    print(sorted(feat_weights, key=lambda x:x[1], reverse=True)[:10])
-    #print(clf.coef_)
-    return report, acc
+    return acc
 
-def classifaction_report_csv(report, lg):
-    report_data = []
-    lines = report.split('\n')
-    if lg == 'cmn':
-        for line in lines[2:-3]:
-            row = []
-            row_data = re.split('       |      ',line)
-            row = row_data[1].strip(), float(row_data[2]), float(row_data[3]), float(row_data[4])
-            report_data.append(row)
-        cP = str(report_data[0][1])
-        cR = str(report_data[0][2])
-        cF = str(report_data[0][3])
-        mP = str(report_data[1][1])
-        mR = str(report_data[1][2])
-        mF = str(report_data[1][3])
-        prf = "--" + "&" + mP + "&" + cP + "&" + "--" + "&" + mR + "&" + cR + "&" + "--" + "&" + mF + "&" + cF
-    elif lg == 'guj':
-        for line in lines[2:-3]:
-            row = []
-            row_data = re.split('       |      ',line)
-            row = row_data[1].strip(), float(row_data[2]), float(row_data[3]), float(row_data[4])
-            report_data.append(row)
-        bP = str(report_data[0][1])
-        bR = str(report_data[0][2])
-        bF = str(report_data[0][3])
-        mP = str(report_data[1][1])
-        mR = str(report_data[1][2])
-        mF = str(report_data[1][3])
-        prf = bP + "&" + mP + "&" + "--" + "&" + bR + "&" + mR + "&" + "--" + "&" + bF + "&" + mF + "&" + "--"
-    else:
-        for line in lines[2:-3]:
-            row = []
-            row_data = re.split('       |      ',line)
-            row = row_data[1].strip(), float(row_data[2]), float(row_data[3]), float(row_data[4])
-            report_data.append(row)
-        bP = str(report_data[0][1])
-        bR = str(report_data[0][2])
-        bF = str(report_data[0][3])
-        cP = str(report_data[1][1])
-        cR = str(report_data[1][2])
-        cF = str(report_data[1][3])
-        mP = str(report_data[2][1])
-        mR = str(report_data[2][2])
-        mF = str(report_data[2][3])
-        prf = bP + "&" + mP + "&" + cP + "&" + bR + "&" + mR + "&" + cR + "&" + bF + "&" + mF + "&" + cF
-    print(prf)
 
+acc_all = []
 def main():
     args = parse_args()
     features, BY_SPEAKER, NO_NORMALIZE, TO_NORMALIZE = getFeatures(args.features_csv, args.lg)
@@ -208,10 +142,38 @@ def main():
     y = data['phonation'].tolist()
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
-    x = normalized[features]
-    report, acc = runClass(x,y,features)
-    classifaction_report_csv(report, args.lg)
-    print('accuracy', acc)
+    """
+    # Calculating the percent undefined
+    udefcount = []
+    udefDict = {}
+    for feature in features:
+        nonNullCount = normalized[feature].count()
+        fullCount = normalized[feature].fillna(0).count()
+        percent = (fullCount-nonNullCount)/fullCount
+        udefDict[feature] = percent
+        #percent = count * 100
+        #udefcount.append(str(round(percent,3)))
+    """
+    #x = normalized[features]
+    udefcount = []
+    udefDict = {}
+    for feature in features:
+        x = normalized[[feature]]
+        acc_all.append(runClass(x,y,features))
+        nonNullCount = normalized[feature].count()
+        fullCount = normalized[feature].fillna(0).count()
+        percent = (fullCount-nonNullCount)/fullCount
+        percent = percent * 100
+        udefDict[feature] = percent
+        udefcount.append(str(round(percent,3)))
+    output = list(zip(acc_all, udefcount))
+    output = pd.DataFrame(output)
+    path = '/Users/Laura/Desktop/Dissertation/Code/acc-udef/acc-udef-' + args.lg + '.csv'
+    output.to_csv(path)
+    #for i in acc_all:
+    #    print(i)
+    #for i in udefcount:
+    #    print(i)
 
 if __name__ == "__main__":
     main()

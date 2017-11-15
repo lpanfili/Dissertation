@@ -222,11 +222,11 @@ def main():
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
     x = normalized[features]
-    report, acc = runClassImb(x,y,features,args.lg, args.features_csv)
+    #report, acc = runClassImb(x,y,features,args.lg, args.features_csv)
     report, acc = runClassRS(x,y,features,args.lg, args.features_csv)
     # Print prf in LaTeX-friendly format
-    #classifaction_report(report, args.lg)
-    #print('accuracy', acc)
+    classifaction_report(report, args.lg)
+    print('accuracy', acc)
 
 if __name__ == "__main__":
     main()
