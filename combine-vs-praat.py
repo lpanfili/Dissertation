@@ -224,8 +224,24 @@ def surrounding_phones(data):
 
 # Makes the path to save the data
 def get_path(lg):
-	path = "../data/lgs/" + lg + "/" + lg + "-all.csv"
+	path = "../data/lgs/" + lg + "/" + lg
 	return path
+
+
+# Calculated the percent undefined for each column
+# Return a dataframe with these values
+def count_undefined(data):
+	undefined = []
+	for col in data: # loop through column names
+		for index, row in data.iterrows():
+			udef_count = 0
+			for val in data[col]:
+				if val == '--undefined--' or val == '0':
+					udef_count += 1
+		undefined.append([col, (udef_count/float(len(data[col])) * 100)])
+	udef = pd.DataFrame(undefined, columns = ['feature', 'undefined'])
+	udef = udef.set_index('feature')
+	return udef
 
 
 def main():
@@ -240,8 +256,9 @@ def main():
 		data = remove_stopwords(data, stopwords)
 		data = surrounding_phones(data)
 	path = get_path(args.lg)
-	data.to_csv(path)
-
+	data.to_csv(path + "-all.csv")
+	udef = count_undefined(data)
+	udef.to_csv(path + "-udef.csv")
 
 if __name__ == "__main__":
     main()
