@@ -33,6 +33,7 @@ def parse_args():
 # Makes a list of features based on the features metadata csv
 # Uses only features indicated with 1 in the csv, and features with <15% udef
 # Returns lists of features normalized in different ways (by speaker, overall, not at all)
+# Features are in LaTeX-friendly format
 def get_features(features_csv, lg):
     features = []
     by_speaker = [] # features to be normalized by speaker
@@ -48,28 +49,30 @@ def get_features(features_csv, lg):
         for line in reader:
             if line[lgIndex] == '1':
                 if float(line[lgIndex + 1]) < 15.0:
-                    features.append(line[3])
-                    if line[1] == '1':
-                        no_normalize.append(line[3])
-                    if line[2] == '1':
-                        by_speaker.append(line[3])
-                    if line[1] == "0" and line[2] == "0":
-                        to_normalize.append(line[3])
+                    feature_name = line[0]
+                    if line[3] != 'x':
+                        #features.append(feature_dict[line[0]])
+                        features.append(feature_name)
+                    if line[3] == '1':
+                        #no_normalize.append(feature_dict[line[0]])
+                        no_normalize.append(feature_name)
+                    if line[4] == '1':
+                        #by_speaker.append(feature_dict[line[0]])
+                        by_speaker.append(feature_name)
+                    if line[3] == "0" and line[4] == "0":
+                        #to_normalize.append(feature_dict[line[3]])
+                        to_normalize.append(feature_name)
     return features, by_speaker, no_normalize, to_normalize
 
 
 # Reads in a CSV of the data
 # Normalizes data
 # Returns x (features), y (labels), and the whole normalized data set
-def read_norm(lg, by_speaker, no_normalize, to_normalize, features, feature_dict):
-    csv = "../data/lgs/" + lg + "/" + lg + ".csv"
+def read_norm(lg, by_speaker, no_normalize, to_normalize, features):
+    csv = "../data/lgs/" + lg + "/" + lg + "-all.csv"
     # Read CSV, replace undefined and 0 with NA
     data = pd.read_csv(csv, na_values=["--undefined--",0])
-    # Replace feature names with latex-friendly names
-    feature_names = list(data)
-    for feat in feature_names:
-        if feat in feature_dict:
-            data = data.rename(columns = {feat: feature_dict[feat]})
+
     zscore = lambda x: (x - x.mean())/x.std() # Define z-score
     # Normalize some features by speaker
     normalized_by_speaker = data[by_speaker+["speaker"]].groupby("speaker").transform(zscore)
@@ -81,8 +84,9 @@ def read_norm(lg, by_speaker, no_normalize, to_normalize, features, feature_dict
     y = data['phonation'].tolist()
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
-    # REPLACE FEATURE NAMES IN NORMALIZED WITH LATEX FRIE
+
     x = normalized[features]
+
     return x, y, normalized
 
 
@@ -411,22 +415,6 @@ def sort_importance(importance, x):
     return top
 
 
-# Makes a dictionary mapping the original feature names
-# To the LaTeX-friendly feature names
-def make_feature_dict(features_csv):
-    feature_dict = {}
-    with open(features_csv) as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        for line in reader:
-            feature = line[0]
-            latex_feature = line[3]
-            if feature not in feature_dict:
-                feature_dict[feature] = ""
-            feature_dict[feature] = latex_feature
-    return feature_dict
-
-
 # Makes a list of the top features
 # For later use in ablation
 def ablation_list(feature_importance, lg):
@@ -449,9 +437,8 @@ def ablation_list(feature_importance, lg):
 def main():
     args = parse_args()
     path = "../data/lgs/" + args.lg + "/" + args.lg
-    feature_dict = make_feature_dict(args.features_csv)
     features, by_speaker, no_normalize, to_normalize = get_features(args.features_csv, args.lg)
-    x, y, data = read_norm(args.lg, by_speaker, no_normalize, to_normalize, features, feature_dict)
+    x, y, data = read_norm(args.lg, by_speaker, no_normalize, to_normalize, features)
     # Get and save correlations
     correlations = get_correlations(data, y)
     correlations.to_csv(path + "-corr-all.csv")
