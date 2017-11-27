@@ -446,7 +446,7 @@ def main():
     SVM_imb_aprf, SVM_imb_weights = SVM_imb(x, y, features, args.lg)
     SVM_rs_aprf, SVM_rs_weights = SVM_rs(x, y, features, args.lg)
     RF_imb_aprf, RF_imb_importance = RF_imb(x, y, features, args.lg)
-    RF_rs_aprf, RF_rs_importance = RF_imb(x, y, features, args.lg)
+    RF_rs_aprf, RF_rs_importance = RF_rs(x, y, features, args.lg)
     # Combine aprf for each classifier and save
     aprf = pd.DataFrame([SVM_imb_aprf, SVM_rs_aprf, RF_imb_aprf, RF_rs_aprf])
     aprf.columns = ['acc', 'pB', 'pM', 'pC', 'rB', 'rM', 'rC', 'fB', 'fM', 'fC']
