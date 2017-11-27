@@ -5,6 +5,7 @@
 # For cmn, converts tone to phonation
 # Adds VoPT
 # Saves data as new csv
+# Saves percent undefined per feature as a separate csv
 
 import csv
 import argparse
@@ -61,7 +62,12 @@ def make_skip_list():
 	'oB1_means002','oB1_means003','oB2_mean','oB2_means001','oB2_means002','oB2_means003',
 	'oB3_mean','oB3_means001','oB3_means002','oB3_means003','oB4_mean','oB4_means001',
 	'oB4_means002','oB4_means003','epoch_mean','epoch_means001','epoch_means002',
-	'epoch_means003','soe_mean','soe_means001','soe_means002','soe_means003']
+	'epoch_means003','soe_mean','soe_means001','soe_means002','soe_means003','sF2_mean',
+	'sF2_means001','sF2_means002','sF2_means003','sF3_mean','sF3_means001','sF3_means002',
+	'sF3_means003','sF4_mean','sF4_means001','sF4_means002','sF4_means003','pF1_mean',
+	'pF1_means001','pF1_means002','pF1_means003','pF2_mean','pF2_means001','pF2_means002',
+	'pF2_means003','pF3_mean','pF3_means001','pF3_means002','pF3_means003','pF4_mean',
+	'pF4_means001','pF4_means002','pF4_means003']
 	return skip_list
 
 
@@ -197,7 +203,10 @@ def add_vopt(data):
 
 # Removes the stop words and returns the data
 def remove_stopwords(data, stopwords):
-	data = data[~data['vowel_label'].isin(stopwords)] # Mistake in Praat script swapped vowel and word
+	# Mistake in Praat script swapped vowel and word (just for eng)
+	data = data.rename(columns = {'vowel_label': 'word_label1', 'word_label': 'vowel_label1'})
+	data = data.rename(columns = {'vowel_label1': 'vowel_label', 'word_label1': 'word_label'})
+	data = data[~data['word_label'].isin(stopwords)] 
 	return data
 
 
@@ -228,9 +237,14 @@ def get_path(lg):
 	return path
 
 
-# Calculated the percent undefined for each column
-# Return a dataframe with these values
+# Calculates the percent undefined for each column
+# Returns a dataframe with these values
 def count_undefined(data):
+	# Remove a few rows I don't care about for undefined
+	skip = ['Filename', 'speaker', 'phonation', 'gridfile', 
+			'vowel_start', 'vowel_end', 'vowel_label', 'Label']
+	for feat in skip:
+		data = data.drop([feat], axis = 1)
 	undefined = []
 	for col in data: # loop through column names
 		for index, row in data.iterrows():
@@ -259,6 +273,7 @@ def main():
 	data.to_csv(path + "-all.csv")
 	udef = count_undefined(data)
 	udef.to_csv(path + "-udef.csv")
+
 
 if __name__ == "__main__":
     main()
