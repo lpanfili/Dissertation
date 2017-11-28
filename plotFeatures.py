@@ -15,6 +15,8 @@ def parse_args():
 	parser.add_argument('features_csv', type = str, help = 'features csv location')
 	parser.add_argument('lg', type = str, help = 'three letter language code')
 	parser.add_argument('metric', type = str, help = 'corr, weight, imp, abl')
+	parser.add_argument('svm_acc', nargs='?', help = 'baseline svm acc, optional')
+	parser.add_argument('rf_acc', nargs='?', help = 'baseline rf acc, optional')
 	return parser.parse_args()
 
 
@@ -66,6 +68,25 @@ def get_data_weight(lg):
 		CM = data['CM-weight'].copy()
 	return data, BC, BM, CM
 
+def get_data_abl(lg, svm_acc, rf_acc):
+	# SVM
+	svm_acc = float(svm_acc)
+	path_svm = "../data/lgs/" + lg + "/" + lg + "-abl-SVM.csv"
+	svm_data = pd.read_csv(path_svm)
+	svm_data = svm_data.set_index(['feat'])
+	svm = svm_data['acc'].copy()
+	svm = svm.apply(lambda i: float(i - svm_acc))
+	# RF
+	rf_acc = float(rf_acc)
+	path_rf = "../data/lgs/" + lg + "/" + lg + "-abl-RF.csv"
+	rf_data = pd.read_csv(path_rf)
+	rf_data = rf_data.set_index(['feat'])
+	rf = rf_data['acc'].copy()
+	rf = rf.apply(lambda i: float(i - rf_acc))
+	data = pd.concat([svm, rf])
+	data.to_csv("/Users/Laura/Desktop/test.csv")
+	return data, svm, rf
+
 
 # Makes and returns a list of tuples for just one contrast
 # Feature, metric
@@ -79,11 +100,16 @@ def make_list_contrast(data):
 
 
 def plot_feat(feat_val_list, features_csv, metric, lg, title):
-	# Sort by absolute value
-	feat_val_list.sort(key = lambda x: abs(x[1]), reverse = True)
+	if metric != 'abl':
+		# Sort by absolute value
+		feat_val_list.sort(key = lambda x: abs(x[1]), reverse = True)
+	else:
+		# Sort by value
+		feat_val_list.sort(key = lambda x: x[1])
 	feat, val = zip(*feat_val_list)
 	colors = get_color(feat, features_csv)
-	val = [abs(n) for n in val] # Convert to absolute values
+	if metric != 'abl':
+		val = [abs(n) for n in val] # Convert to absolute values
 	# Plot
 	x_pos = np.arange(len(feat))
 	plt.bar(x_pos, val, color = colors, edgecolor = "none")
@@ -94,6 +120,8 @@ def plot_feat(feat_val_list, features_csv, metric, lg, title):
 		plt.ylabel('Importance')
 	if metric == 'weight':
 		plt.ylabel('Weight (Absolute Value)')
+	if metric == 'abl':
+		plt.ylabel('Accuracy Change')
 	plt.xticks([])
 	f0 = mpatches.Patch(color = '#a6cee3', label = 'f0')
 	vopt = mpatches.Patch(color = '#1f78b4', label = 'VoPT')
@@ -108,7 +136,11 @@ def plot_feat(feat_val_list, features_csv, metric, lg, title):
 	dur = mpatches.Patch(color = '#6a3d9a', label = 'Duration')
 	pos = mpatches.Patch(color = '#ffff99', label = 'Prosodic Position')
 	surr = mpatches.Patch(color = '#b15928', label = 'Surrounding Phones')
-	plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr])
+	if metric == 'abl':
+		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], loc = 4)
+	else:
+		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr])
+
 	plt.title(title)
 	plt.show()
 
@@ -182,13 +214,21 @@ def make_title(lg, metric):
 		title += ' Ablation'
 	return title
 
+def append_title(title, clf):
+	if clf == 'svm':
+		title += ', SVM'
+	if clf == 'rf':
+		title += ', Random Forest'
+	return title
+
+
 def main():
 	args = parse_args()
 	set_font()
 	# Make partial title
 	title = make_title(args.lg, args.metric)
 	# Get the data depending on which information you want
-	if args.metric != 'imp':
+	if args.metric != 'imp' and args.metric != 'abl':
 		if args.metric == 'corr':
 			data, BC, BM, CM = get_data_corr(args.lg)
 		if args.metric == 'weight':
@@ -215,6 +255,15 @@ def main():
 		data = get_data_imp(args.lg)
 		feat_val_list = make_list_contrast(data)
 		plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title)
+	if args.metric == 'abl':
+		data, svm, rf = get_data_abl(args.lg, args.svm_acc, args.rf_acc)
+		feat_val_list = make_list_contrast(svm)
+		title_svm = append_title(title, 'svm')
+		plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title_svm)
+		feat_val_list = make_list_contrast(rf)
+		title_rf = append_title(title, 'rf')
+		plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title_rf)
+	
 
 # TODO: Add titles to plots
 # TODO: Add ablation
