@@ -123,6 +123,7 @@ def plot_feat(feat_val_list, features_csv, metric, lg, title):
 	if metric == 'abl':
 		plt.ylabel('Accuracy Change')
 	plt.xticks([])
+	"""
 	f0 = mpatches.Patch(color = '#a6cee3', label = 'f0')
 	vopt = mpatches.Patch(color = '#1f78b4', label = 'VoPT')
 	jitter = mpatches.Patch(color = '#000080', label = 'Jitter')
@@ -146,7 +147,16 @@ def plot_feat(feat_val_list, features_csv, metric, lg, title):
 			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], loc = 4)
 		else:
 			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur])
-
+	"""
+	# LEGEND BY TIME PERIOD
+	m = mpatches.Patch(color = '#d7191c', label = 'Mean')
+	first = mpatches.Patch(color = '#fdae61', label = 'Beginning')
+	second = mpatches.Patch(color = '#abd9e9', label = 'Middle')
+	third = mpatches.Patch(color = '#2c7bb6', label = 'End')
+	if metric == 'abl':
+		plt.legend(handles = [m, first, second, third], loc = 4)
+	else:
+		plt.legend(handles = [m, first, second, third])
 	plt.title(title)
 	plt.show()
 
@@ -167,13 +177,32 @@ def get_color(feat, features_csv):
 		'6': '#cab2d6', # F1
 		'7': '#6a3d9a', # dur
 		'10': '#ffff99', # prosodic pos
-		'12': '#b15928' # surrounding
+		'12': '#b15928', # surrounding
+		'13': '#ffffff', # white for any I want to hide
+		'14': '#d7191c', # mean
+		'15': '#fdae61', # 1st
+		'16': '#abd9e9', # 2nd
+		'17': '#2c7bb6' # 3rd
 	}
 	features_all = pd.read_csv(features_csv)
 	features = pd.concat([features_all['feature'], features_all['category']], axis = 1)
 	features = features.set_index(['feature'])
 	category_dict = features.to_dict()
 	category_dict = category_dict['category']
+	# Make all that end in 2 (middle third) cat 13
+	#for i in category_dict:
+	#	if i.endswith('2'):
+	#		category_dict[i] = '13'
+	# Convert to color codes by timing
+	for i in category_dict:
+		if i.endswith('1'):
+			category_dict[i] = '15'
+		elif i.endswith('2'):
+			category_dict[i] = '16'
+		elif i.endswith('3'):
+			category_dict[i] = '17'
+		else:
+			category_dict[i] = '14'
 	for i in feat:
 		category = category_dict[i]
 		colors.append(color_dict[category])
