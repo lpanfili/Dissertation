@@ -134,12 +134,18 @@ def plot_feat(feat_val_list, features_csv, metric, lg, title):
 	tilt = mpatches.Patch(color = '#ff7f00', label = "Spectral Tilt")
 	f1 = mpatches.Patch(color = '#cab2d6', label = 'F1')
 	dur = mpatches.Patch(color = '#6a3d9a', label = 'Duration')
-	pos = mpatches.Patch(color = '#ffff99', label = 'Prosodic Position')
-	surr = mpatches.Patch(color = '#b15928', label = 'Surrounding Phones')
-	if metric == 'abl':
-		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], loc = 4)
+	if lg == 'eng':
+		pos = mpatches.Patch(color = '#ffff99', label = 'Prosodic Position')
+		surr = mpatches.Patch(color = '#b15928', label = 'Surrounding Phones')
+		if metric == 'abl':
+			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], loc = 4)
+		else:
+			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr])
 	else:
-		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr])
+		if metric == 'abl':
+			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], loc = 4)
+		else:
+			plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur])
 
 	plt.title(title)
 	plt.show()
