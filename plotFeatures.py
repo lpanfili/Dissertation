@@ -102,7 +102,7 @@ def get_data_abl_cat(lg, svm_acc, rf_acc):
 	rf_data = pd.read_csv(path_rf)
 	rf_abl_acc = rf_data['acc'].copy()
 	rf_cat = rf_data['cat'].copy()
-	rf_abl_acc = rf_abl_acc.apply(lambda i: float(i - svm_acc))
+	rf_abl_acc = rf_abl_acc.apply(lambda i: float(i - rf_acc))
 	rf_res = pd.concat([rf_abl_acc, rf_cat], axis = 1).set_index(['cat'])
 	return 0, svm_res, rf_res
 
@@ -391,9 +391,9 @@ def append_title(title, clf):
 		title += ', Random Forest'
 	return title
 
-def plot_feat_cat(feat_val_list_svm, feat_val_list_rf, features_csv, lg, title):
+def plot_feat_cat(feat_val_list_svm, feat_val_list_rf, features_csv, lg):
 	fig = plt.figure()
-	title = "English Category Ablation"
+	title = "Zapotec Category Ablation"
 	fig.suptitle(title, fontsize = 17)
 	fig.text(0.06, 0.5, 'Accuracy Change', ha='center', va='center', rotation='vertical')
 	plt.xticks([])
@@ -437,12 +437,16 @@ def plot_feat_cat(feat_val_list_svm, feat_val_list_rf, features_csv, lg, title):
 	if lg == 'eng':
 		pos = mpatches.Patch(color = '#ffff99', label = 'Prosodic Position')
 		surr = mpatches.Patch(color = '#b15928', label = 'Surrounding Phones')
-		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], ncol = 3, bbox_to_anchor = (0.5, 0), loc = 'center')
+		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], ncol = 3, bbox_to_anchor = (0.6, .3), loc = 'center')
 		#plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur, pos, surr], ncol = 1, loc='center left', bbox_to_anchor=(.95, 1))
 	else:
 		#plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], ncol = 3, bbox_to_anchor = (0.5, .15), loc='center')
+		# cmn maj
 		#plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], ncol = 3, bbox_to_anchor = (0.5, .05), loc='center')
+		# hmn zap
 		plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], ncol = 3, bbox_to_anchor = (0.5, -0.1), loc='center')
+		# guj
+		#plt.legend(handles=[f0, vopt, jitter, cpp, rmse, shimmer, hnr, shr, tilt, f1, dur], ncol = 3, bbox_to_anchor = (0.65, .2), loc='center')
 	plt.show()
 
 
@@ -494,17 +498,10 @@ def main():
 		title_rf = append_title(title, 'rf')
 		plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title_rf)
 	if args.metric == "abl-cat":
-		# SVM
 		data, svm, rf = get_data_abl_cat(args.lg, args.svm_acc, args.rf_acc)
 		feat_val_list_svm = make_list_contrast_abl(svm)
-		title_svm = append_title(title, 'svm')
 		feat_val_list_rf = make_list_contrast_abl(rf)
-		title_rf = append_title(title, 'rf')
-		plot_feat_cat(feat_val_list_svm, feat_val_list_rf, args.features_csv, args.lg, title_svm)
-		#plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title_svm)
-		# RF
-
-		#plot_feat(feat_val_list, args.features_csv, args.metric, args.lg, title_rf)
+		plot_feat_cat(feat_val_list_svm, feat_val_list_rf, args.features_csv, args.lg)
 	
 
 # TODO: Add titles to plots
