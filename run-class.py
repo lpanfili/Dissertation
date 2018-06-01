@@ -1,7 +1,7 @@
 # For a given language:
 # Calculates correlations (saves CSV of all, unsorted)
-# Runs an SVM and a RF on both imbalanced and resampled data
-# Saves accuracy, precision, recall, and F-score for each
+# Trains and tests an SVM and a RF on both imbalanced and resampled data
+# Saves accuracy, weighted F1, precision, recall, and F-score for each
 # Calculates feature weights for the two SVMs (saves CSVs of all, unsorted)
 # Calculates feature importance for the two RFs (saves CSVs of all, unsorted)
 # Outputs the top correlations, weights, and importance (saves CSV for rs only)
@@ -12,7 +12,7 @@ import sklearn
 from sklearn import svm, metrics
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold
 import argparse
 from imblearn.over_sampling import SMOTE
@@ -48,7 +48,7 @@ def get_features(features_csv, lg):
         # Pick only features marked as 1 and with < 15% udef
         for line in reader:
             if line[lgIndex] == '1':
-                if float(line[lgIndex + 1]) < 15.0:
+                if float(line[lgIndex + 1]) < 0.15:
                     feature_name = line[0]
                     if line[3] != 'x':
                         #features.append(feature_dict[line[0]])
@@ -72,7 +72,6 @@ def read_norm(lg, by_speaker, no_normalize, to_normalize, features):
     csv = "../data/lgs/" + lg + "/" + lg + "-all.csv"
     # Read CSV, replace undefined and 0 with NA
     data = pd.read_csv(csv, na_values=["--undefined--",0])
-
     zscore = lambda x: (x - x.mean())/x.std() # Define z-score
     # Normalize some features by speaker
     normalized_by_speaker = data[by_speaker+["speaker"]].groupby("speaker").transform(zscore)
@@ -84,9 +83,7 @@ def read_norm(lg, by_speaker, no_normalize, to_normalize, features):
     y = data['phonation'].tolist()
     # Returns all the normalized (or not) data to one place
     normalized = pd.concat([normalized, normalized_by_speaker, notnormalized], axis=1)
-
     x = normalized[features]
-
     return x, y, normalized
 
 
@@ -110,7 +107,6 @@ def SVM_imb(x, y, features, lg):
     y = np.array(y)
     y_pred_all = np.array([])
     y_test_all = np.array([])
-    accuracyList = []
     # Indented block happens within the fold
     for train_index, test_index in skf.split(x,y):
         x_train, x_test = x[train_index], x[test_index]
@@ -119,16 +115,18 @@ def SVM_imb(x, y, features, lg):
         x_train = pd.DataFrame(x_train)
         x_test = pd.DataFrame(x_test)
         x_train = x_train.groupby(y_train).transform(fill_na_zero)
-        x_test = x_test.groupby(y_test).transform(fill_na_zero)
+       # x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        x_test = x_test.apply(fill_na_zero)
         # Fit classifier
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
+    fscore = f1_score(y_test_all, y_pred_all, average='weighted')
     report = classification_report(y_test_all, y_pred_all)
     prf = clean_report(report, lg)
     acc = round((accuracy_score(y_test_all, y_pred_all)*100),3)
-    metrics = [str(round(acc,3))] + prf
+    metrics = [str(round(acc,3))] + [str(round(fscore,5))] + prf
     weights = get_weights(clf.coef_, features, lg)
     return metrics, weights
 
@@ -153,7 +151,8 @@ def SVM_rs(x, y, features, lg):
         x_train = pd.DataFrame(x_train)
         x_test = pd.DataFrame(x_test)
         x_train = x_train.groupby(y_train).transform(fill_na_zero)
-        x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        #x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        x_test = x_test.apply(fill_na_zero)
         # Resample (twice because there are three classes)
         x_res, y_res = sm.fit_sample(x_train, y_train)
         x_res, y_res = sm.fit_sample(x_res, y_res)
@@ -162,11 +161,15 @@ def SVM_rs(x, y, features, lg):
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
+    fscore = f1_score(y_test_all, y_pred_all, average='weighted')
     report = classification_report(y_test_all, y_pred_all)
     prf = clean_report(report, lg)
     acc = round((accuracy_score(y_test_all, y_pred_all)*100),3)
-    metrics = [str(round(acc,3))] + prf
+    metrics = [str(round(acc,3))] + [str(round(fscore,5))] + prf
     weights = get_weights(clf.coef_, features, lg)
+    print('SVM', fscore)
+    mat = confusion_matrix(y_test_all, y_pred_all, labels = ['B','M','C'])
+    print(mat)
     return metrics, weights
 
 
@@ -190,16 +193,18 @@ def RF_imb(x, y, features, lg):
         x_train = pd.DataFrame(x_train)
         x_test = pd.DataFrame(x_test)
         x_train = x_train.groupby(y_train).transform(fill_na_zero)
-        x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        #x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        x_test = x_test.apply(fill_na_zero)
         # Fit classifier
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
+    fscore = f1_score(y_test_all, y_pred_all, average='weighted')
     report = classification_report(y_test_all, y_pred_all)
     prf = clean_report(report, lg)
     acc = round((accuracy_score(y_test_all, y_pred_all)*100),3)
-    metrics = [str(round(acc,3))] + prf
+    metrics = [str(round(acc,3))] + [str(round(fscore,5))] + prf
     # Feature importance
     importance = get_importance(clf.feature_importances_, features, lg)
     return metrics, importance
@@ -224,8 +229,9 @@ def RF_rs(x, y, features, lg):
         # Replace undefined
         x_train = pd.DataFrame(x_train)
         x_test = pd.DataFrame(x_test)
-        x_train = x_train.groupby(y_train).transform(fillNaOrZero)
-        x_test = x_test.groupby(y_test).transform(fillNaOrZero)
+        x_train = x_train.groupby(y_train).transform(fill_na_zero)
+        #x_test = x_test.groupby(y_test).transform(fill_na_zero)
+        x_test = x_test.apply(fill_na_zero)
         # Resample (twice because there are three classes)
         x_res, y_res = sm.fit_sample(x_train, y_train)
         x_res, y_res = sm.fit_sample(x_res, y_res)
@@ -234,12 +240,16 @@ def RF_rs(x, y, features, lg):
         y_pred = clf.predict(x_test)
         y_pred_all = np.append(y_pred_all, y_pred)
         y_test_all = np.append(y_test_all, y_test)
+    fscore = f1_score(y_test_all, y_pred_all, average='weighted')
     report = classification_report(y_test_all, y_pred_all)
     prf = clean_report(report, lg)
     acc = round((accuracy_score(y_test_all, y_pred_all)*100),3)
-    metrics = [str(round(acc,3))] + prf
+    metrics = [str(round(acc,3))] + [str(round(fscore,5))] + prf
     # Feature importance
     importance = get_importance(clf.feature_importances_, features, lg)
+    print('RF', fscore)
+    mat = confusion_matrix(y_test_all, y_pred_all, labels = ['B','M','C'])
+    print(mat)
     return metrics, importance
 
 
@@ -275,7 +285,6 @@ def get_importance(coef, features, lg):
     importance = list(zip(features,coef))
     importance = pd.DataFrame(importance, columns = ['feat', 'importance'])
     importance = importance.set_index('feat')
-    # MAYBE NEED TO ROUND OR *100
     return importance
 
 
@@ -414,26 +423,6 @@ def sort_importance(importance, x):
     top = importance.head(n = x)
     return top
 
-
-# Makes a list of the top features
-# For later use in ablation
-def ablation_list(feature_importance, lg):
-    cmn_index = [4,6,8]
-    guj_index = [2,6,8]
-    others_index = [0,2,4,6,8,10,12]
-    to_ablate = []
-    if lg == 'cmn':
-        index_list = cmn_index
-    elif lg == 'guj':
-        index_list = guj_index
-    else:
-        index_list = others_index
-    for i in index_list:
-        for j in feature_importance[[i]].values.tolist():
-            to_ablate.append(j[0])
-    return to_ablate
-
-
 def main():
     args = parse_args()
     path = "../data/lgs/" + args.lg + "/" + args.lg
@@ -443,13 +432,14 @@ def main():
     correlations = get_correlations(data, y)
     correlations.to_csv(path + "-corr-all.csv")
     # Run four classifiers (SVM and RF on imb and rs data)
-    SVM_imb_aprf, SVM_imb_weights = SVM_imb(x, y, features, args.lg)
-    SVM_rs_aprf, SVM_rs_weights = SVM_rs(x, y, features, args.lg)
-    RF_imb_aprf, RF_imb_importance = RF_imb(x, y, features, args.lg)
+    #SVM_imb_aprf, SVM_imb_weights = SVM_imb(x, y, features, args.lg)
+    #SVM_rs_aprf, SVM_rs_weights = SVM_rs(x, y, features, args.lg)
+    #RF_imb_aprf, RF_imb_importance = RF_imb(x, y, features, args.lg)
     RF_rs_aprf, RF_rs_importance = RF_rs(x, y, features, args.lg)
+    return
     # Combine aprf for each classifier and save
     aprf = pd.DataFrame([SVM_imb_aprf, SVM_rs_aprf, RF_imb_aprf, RF_rs_aprf])
-    aprf.columns = ['acc', 'pB', 'pM', 'pC', 'rB', 'rM', 'rC', 'fB', 'fM', 'fC']
+    aprf.columns = ['acc', 'f1', 'pB', 'pM', 'pC', 'rB', 'rM', 'rC', 'fB', 'fM', 'fC']
     aprf = aprf.rename({0: 'SVM_imb', 1: 'SVM_rs', 2: 'RF_imb', 3: 'RF_rs'})
     aprf.to_csv(path + "-aprf.csv")
     # Save weights and importance
@@ -463,9 +453,6 @@ def main():
     importance_sorted = sort_importance(RF_rs_importance, 10)
     feature_importance = pd.concat([corr_sorted, weights_sorted, importance_sorted], axis = 1)
     feature_importance.to_csv(path + "-topvals.csv")
-    # Make and print a list of the top features to ablate
-    to_ablate = ablation_list(feature_importance, args.lg)
-    print(to_ablate)
 
 if __name__ == "__main__":
     main()
