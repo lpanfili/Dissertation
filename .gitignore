@@ -1,7 +1,7 @@
 junk
 .DS_Store
 texify.py
-_pycache_
+__pycache__
 ablate.py
 all.py
 countUndefined.py
