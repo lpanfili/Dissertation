@@ -30,7 +30,7 @@ def getStopWords():
 def getWords():
 	words = []
 	#with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/All/All-praat-1.txt") as f:
-	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-praat.txt") as f:
+	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/raw/eng-praat.txt") as f:
 		reader = csv.reader(f, delimiter = '\t')
 		header = next(reader)
 		for line in reader:
@@ -41,7 +41,7 @@ def getWords():
 def remove01():
 	data = []
 	#with open("/Users/Laura/Desktop/Dissertation/data/english/english-vs-1.txt") as f:
-	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/english-vs-1.txt") as f:
+	with open("/Users/Laura/Desktop/Dissertation/data/lgs/eng/raw/eng-vs-1.txt") as f:
 		reader = csv.reader(f, delimiter = '\t')
 		header = next(reader)
 		for line in reader:
